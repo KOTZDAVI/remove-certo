@@ -48,13 +48,25 @@ PORT = 5050
 URL  = f"http://localhost:{PORT}"
 
 
-def _open_browser():
-    time.sleep(1.8)
-    webbrowser.open(URL)
+def _open_browser_when_ready():
+    """Espera o Flask subir de verdade antes de abrir o navegador."""
+    import urllib.request
+    for _ in range(120):
+        time.sleep(1)
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{PORT}/", timeout=1)
+            webbrowser.open(URL)
+            # Fecha o terminal após abrir o navegador
+            if sys.stdout.isatty():
+                time.sleep(1)
+                os.system("pkill -P $$ 2>/dev/null; kill $(ps -o ppid= -p $$) 2>/dev/null || true")
+            return
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
     print(f"Remove Certo iniciando em {URL}")
     print("Pressione Ctrl+C para encerrar.")
-    threading.Thread(target=_open_browser, daemon=True).start()
+    threading.Thread(target=_open_browser_when_ready, daemon=True).start()
     app.run(debug=False, host="127.0.0.1", port=PORT, use_reloader=False)
