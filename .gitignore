@@ -1,0 +1,9 @@
+dist/
+build/
+__pycache__/
+*.pyc
+uploads/
+results/
+originals/
+*.spec
+make_run.sh

@@ -1,0 +1,1904 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Remove Certo</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f13;--s1:#16161f;--s2:#1a1a28;--border:#2d2d42;
+  --text:#e8e8f0;--muted:#6b7280;--accent:#7c3aed;--a2:#3b82f6;
+  --green:#065f46;--gt:#6ee7b7;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     background:var(--bg);color:var(--text);min-height:100vh;padding:28px 16px}
+.wrap{max-width:960px;margin:0 auto}
+h1{text-align:center;font-size:1.7rem;font-weight:700;letter-spacing:-.5px;margin-bottom:4px;
+   background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;
+   -webkit-text-fill-color:transparent;background-clip:text}
+.sub{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:24px}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.tab{padding:10px 22px;background:none;border:none;border-bottom:2px solid transparent;
+     color:var(--muted);font-size:.88rem;font-weight:600;cursor:pointer;margin-bottom:-1px}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+
+/* drop zone */
+.dz{border:2px dashed var(--border);border-radius:14px;padding:44px 24px;text-align:center;
+    cursor:pointer;transition:.2s;background:var(--s1)}
+.dz:hover,.dz.over{border-color:var(--accent);background:#1c1631}
+.dz svg{color:#4b5563;margin-bottom:10px}
+.dz p{color:#9ca3af;font-size:.88rem}.dz span{color:var(--accent);font-weight:600}
+.dz .fmt{font-size:.72rem;color:#4b5563;margin-top:6px}
+input[type=file]{display:none}
+
+/* mode */
+.mode-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 0}
+.mlbl{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.tg{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.topt{padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;
+      background:none;color:var(--muted)}
+.topt.active{background:var(--accent);color:#fff}
+#white-opts{display:none;margin:10px 0 0}
+#white-opts .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#white-opts input[type=range]{width:130px;accent-color:var(--accent)}
+#white-opts .hint{font-size:.72rem;color:var(--muted)}
+.mode-tip{margin-top:10px;padding:8px 12px;border-radius:8px;font-size:.76rem;
+          background:#1c1e28;border:1px solid #2d2d42;color:#9ca3af;display:none}
+.mode-tip b{color:#fbbf24}
+
+/* queue */
+#queue{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.qi{background:var(--s2);border:1px solid var(--border);border-radius:8px;
+    padding:6px 10px;display:flex;align-items:center;gap:8px;font-size:.78rem;color:#9ca3af;max-width:240px}
+.qi-thumb{width:38px;height:38px;object-fit:cover;border-radius:5px;flex-shrink:0;background:#111}
+.qi .fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.qi .rm{background:none;border:none;color:var(--muted);padding:0;font-size:.85rem;cursor:pointer;flex-shrink:0}
+.qi .rm:hover{color:#ef4444}
+
+/* buttons */
+.actions{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
+button{padding:10px 22px;border:none;border-radius:8px;font-size:.86rem;font-weight:600;
+       cursor:pointer;transition:.15s}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--a2));color:#fff;padding:11px 28px}
+.btn-s{background:var(--s2);color:#9ca3af;border:1px solid var(--border)}
+.btn-g{background:var(--green);color:var(--gt)}
+
+/* result cards */
+.res-section{margin-top:32px}
+.res-section h2{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+                letter-spacing:1px;margin-bottom:14px}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.rcard{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.rcard.error{border-color:#7f1d1d}
+.card-split{display:grid;grid-template-columns:1fr 1fr;height:150px;position:relative}
+.card-split::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.2)}
+.cs-b,.cs-a{overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cs-b{background:#fff}
+.cs-a{background:repeating-conic-gradient(#1e1e2e 0% 25%,#252535 0% 50%) 0 0/12px 12px}
+.cs-b img,.cs-a img{width:100%;height:100%;object-fit:cover}
+.cs-lbl{position:absolute;font-size:.58rem;font-weight:700;color:rgba(255,255,255,.7);
+        letter-spacing:.5px;text-transform:uppercase;background:rgba(0,0,0,.45);
+        padding:2px 5px;border-radius:3px;pointer-events:none}
+.cs-lbl.bl{top:5px;left:5px}.cs-lbl.al{top:5px;right:5px}
+.card-foot{padding:10px 12px;display:flex;align-items:center;gap:8px}
+.card-name{flex:1;font-size:.74rem;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-edit{background:var(--s2);color:var(--text);border:1px solid var(--border);font-size:.74rem;padding:5px 12px;border-radius:6px}
+.btn-dl-sm{background:var(--green);color:var(--gt);font-size:.74rem;padding:5px 12px;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center}
+.card-err{padding:20px;color:#ef4444;font-size:.8rem}
+
+/* ── EDITOR MODAL ── */
+.ed-modal{position:fixed;inset:0;z-index:300;background:#080810;display:none;flex-direction:column}
+.ed-modal.open{display:flex}
+.ed-header{display:flex;align-items:center;gap:8px;padding:10px 14px;
+           background:#111118;border-bottom:1px solid var(--border);flex-shrink:0}
+.ed-nav{width:34px;height:34px;background:var(--s2);border:1px solid var(--border);
+        color:var(--text);border-radius:7px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ed-nav:disabled{opacity:.3;cursor:default}
+.ed-name{font-size:.85rem;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ed-ctr{font-size:.74rem;color:var(--muted);margin-left:2px}
+.ed-sp{flex:1}
+.ed-acts{display:flex;gap:8px;align-items:center}
+.ed-tab{padding:6px 14px;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;
+        border:1px solid var(--border);background:var(--s2);color:var(--muted)}
+.ed-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ed-dl{padding:6px 16px;background:var(--green);color:var(--gt);border:none;
+       border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer}
+.svg-mode-opt:hover{background:#2d1f4e !important}
+.svg-mode-opt.active-mode{color:#fff !important}
+#ed-svg-menu{font-size:.65rem;line-height:1}
+.ed-x{width:34px;height:34px;background:var(--s2);border:1px solid var(--border);
+      color:var(--text);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* barra de opções de qualidade */
+#ed-opts-bar{display:flex;align-items:center;gap:10px;padding:6px 14px;flex-shrink:0;
+             background:#0d0d1c;border-bottom:1px solid var(--border);font-size:.76rem;flex-wrap:wrap}
+.eopt-lbl{color:var(--muted);white-space:nowrap}
+.eopt-tog{padding:3px 11px;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;
+          border:1px solid var(--border);background:var(--s2);color:var(--muted);transition:.15s}
+.eopt-tog.on{background:#78350f;color:#fde68a;border-color:#92400e}
+.eopt-tog.bg-on{background:#1e3a5f;color:#93c5fd;border-color:#2563eb}
+.eopt-sep{width:1px;height:18px;background:var(--border)}
+#ed-size-sel,#ed-upscale{padding:3px 7px;background:var(--s2);border:1px solid var(--border);
+             border-radius:6px;color:var(--text);font-size:.74rem;cursor:pointer}
+#ed-size-sel:focus,#ed-upscale:focus{outline:none;border-color:var(--accent)}
+
+/* painel de fundo */
+#bg-panel{flex-shrink:0;display:none;background:#0a0a18;border-bottom:1px solid var(--border)}
+#bg-panel.on{display:block}
+.bg-type-row{display:flex;gap:4px;padding:8px 14px;border-bottom:1px solid #1a1a2e;flex-wrap:wrap}
+.bg-type-btn{padding:4px 13px;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;
+             border:1px solid var(--border);background:var(--s2);color:var(--muted);transition:.12s}
+.bg-type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.bg-content{padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:52px}
+#bg-img-grid{display:flex;gap:8px;flex-wrap:wrap;max-height:150px;overflow-y:auto}
+.bg-img-th{width:90px;height:64px;object-fit:cover;border-radius:7px;cursor:pointer;
+           border:2px solid var(--border);flex-shrink:0;transition:.15s}
+.bg-img-th.active,.bg-img-th:hover{border-color:var(--accent)}
+.bg-empty-msg{font-size:.76rem;color:#4b5563;font-style:italic}
+
+/* viewport */
+.ed-vp{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+/* ── compare view ── */
+#cmp-view{position:absolute;inset:0;display:none;user-select:none}
+#cmp-view.on{display:block}
+.cmp-side{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cmp-side.before{background:#fff}
+.cmp-side.after{background:repeating-conic-gradient(#1a1a28 0% 25%,#222232 0% 50%) 0 0/16px 16px}
+.cmp-side img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.cmp-divider{position:absolute;top:0;bottom:0;width:2px;background:#fff;
+             transform:translateX(-50%);pointer-events:none;z-index:5}
+.cmp-handle{position:absolute;top:50%;transform:translate(-50%,-50%);
+            width:42px;height:42px;border-radius:50%;background:#fff;cursor:ew-resize;
+            display:flex;align-items:center;justify-content:center;z-index:6;
+            box-shadow:0 2px 14px rgba(0,0,0,.6)}
+.cmp-lbl{position:absolute;top:10px;font-size:.65rem;font-weight:700;color:rgba(255,255,255,.8);
+         text-transform:uppercase;letter-spacing:.5px;background:rgba(0,0,0,.45);
+         padding:3px 8px;border-radius:4px;z-index:7;pointer-events:none}
+.cmp-lbl.bl{left:12px}.cmp-lbl.al{right:12px}
+
+/* ── edit view ── */
+#edit-view{position:absolute;inset:0;display:none;overflow:hidden;
+           background:repeating-conic-gradient(#1a1a28 0% 25%,#222232 0% 50%) 0 0/16px 16px}
+#edit-view.on{display:block}
+#cv-wrap{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+#edit-canvas{display:block;cursor:none;image-rendering:pixelated;image-rendering:auto}
+#guide-canvas{position:absolute;top:0;left:0;pointer-events:none;display:none}
+/* cursor circle */
+#bcursor{position:fixed;border-radius:50%;pointer-events:none;z-index:400;
+         border:2px solid #fff;mix-blend-mode:difference;transform:translate(-50%,-50%);
+         display:none}
+
+/* brush bar */
+.brush-bar{flex-shrink:0;padding:10px 16px;background:#111118;border-top:1px solid var(--border);
+           display:none;align-items:center;gap:14px;flex-wrap:wrap}
+.brush-bar.on{display:flex}
+.bgrp{display:flex;align-items:center;gap:8px}
+.bgrp span{font-size:.76rem;color:var(--muted)}
+.bgrp-sep{margin-left:auto;padding-left:12px;border-left:1px solid var(--border)}
+.btool{padding:7px 14px;border-radius:7px;font-size:.78rem;font-weight:600;
+       border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer}
+.btool.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btool.l.active{background:#4c1d95;border-color:#6d28d9;color:#ddd6fe}
+.btool.r.active{background:#065f46;border-color:#065f46;color:#6ee7b7}
+.btool.s.active{background:#92400e;border-color:#92400e;color:#fde68a}
+.btool.g.active{background:#1e3a5f;border-color:#2563eb;color:#93c5fd}
+.btool.fs.active{background:#7f1d1d;border-color:#ef4444;color:#fca5a5}
+.btool.fs:not(.active){background:var(--s2);color:var(--muted)}
+#bt-fa-ad.active{background:#064e3b;border-color:#10b981;color:#6ee7b7}
+#bsz-sl,#ftol-sl{width:100px;accent-color:var(--accent)}
+.tip-edit{font-size:.72rem;color:var(--muted);margin-left:auto}
+.fill-hint{font-size:.72rem;color:#fde68a;background:#1c1507;border:1px solid #92400e;
+           padding:4px 10px;border-radius:6px;display:none}
+.fill-hint.on{display:inline}
+
+/* PDF */
+#pdf-info{margin-top:20px;display:none}
+.pdf-meta{font-size:.82rem;color:var(--muted);margin-bottom:14px}
+.pdf-meta strong{color:var(--text)}
+.pdf-opts{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.pdf-opts label{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pdf-opts input[type=number]{width:70px;padding:6px 8px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem}
+.pdf-opts input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+.psel-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.pages-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:460px;overflow-y:auto}
+.pthumb{border:2px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;position:relative;background:var(--s2)}
+.pthumb:hover,.pthumb.sel{border-color:var(--accent)}
+.pthumb.sel::after{content:'✓';position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700}
+.pthumb img{width:100%;display:block}
+.pthumb .pn{font-size:.68rem;color:var(--muted);text-align:center;padding:4px 0}
+
+/* export bar */
+.exp-bar{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;
+         padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px}
+.exp-bar.on{display:flex}
+.exp-bar label{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.exp-bar input[type=text]{flex:1;min-width:200px;padding:7px 11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:.8rem;font-family:monospace}
+.exp-bar input[type=text]:focus{outline:none;border-color:var(--accent)}
+.exp-btn{padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:7px;
+         font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.exp-browse{padding:6px 10px;background:var(--s2);color:var(--text);border:1px solid var(--border);
+            border-radius:7px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.exp-browse:hover{background:var(--s3,#2a2a40)}
+.exp-browse:disabled{opacity:.5;cursor:default}
+.exp-bar .exp-msg{font-size:.75rem;color:#6ee7b7;display:none}
+.exp-bar .exp-msg.on{display:inline}
+
+/* progress */
+.prog{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;flex-direction:column;
+      align-items:center;justify-content:center;gap:14px;z-index:500}
+.prog.on{display:flex}
+.prog p{color:var(--text);font-size:.92rem}
+.spin{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+.cnt{color:var(--accent);font-size:.8rem}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Remove Certo</h1>
+  <p class="sub">Processamento local — suas imagens não saem do computador</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="images">Remover Fundo</button>
+    <button class="tab" data-tab="pdf">Extrair do PDF</button>
+  </div>
+
+  <!-- TAB IMAGENS -->
+  <div class="panel active" id="tab-images">
+    <div class="dz" id="dz">
+      <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+      </svg>
+      <p><span>Clique para selecionar</span> ou arraste imagens aqui</p>
+      <p class="fmt">PNG · JPG · JPEG · WEBP · BMP</p>
+      <input type="file" id="fi" multiple accept=".png,.jpg,.jpeg,.webp,.bmp"/>
+    </div>
+
+    <div class="mode-row">
+      <span class="mlbl">Tipo:</span>
+      <div class="tg">
+        <button class="topt" data-mode="white">Arte / Fundo Branco</button>
+        <button class="topt active" data-mode="ai">Foto (IA)</button>
+      </div>
+    </div>
+    <div class="mode-tip" id="tip-ai">
+      <b>Foto (IA)</b> — Ideal para fotos com pessoas, produtos, animais e fundos complexos.
+      Para artes gráficas, logos e screenshots com fundo branco, use <b>Arte / Fundo Branco</b>.
+    </div>
+    <div class="mode-tip" id="tip-white" style="display:none">
+      <b>Arte / Fundo Branco</b> — Remove a cor branca das bordas da imagem. Perfeito para elementos de design, logos e artes do PDF.
+    </div>
+
+    <div id="white-opts">
+      <div class="row" style="margin-top:10px">
+        <span class="mlbl">Tolerância:</span>
+        <input type="range" id="img-tol" min="2" max="60" value="15"/>
+        <span id="itv" style="font-size:.8rem;min-width:22px">15</span>
+        <span class="hint" id="tol-hint">Aumente se sobrar borda · Diminua se cortar demais</span>
+      </div>
+    </div>
+
+    <div id="queue"></div>
+    <div class="actions">
+      <button class="btn-s" id="btn-clear">Limpar</button>
+      <button class="btn-p" id="btn-proc" disabled>Remover Fundos</button>
+      <button class="btn-g" id="btn-zip" style="display:none">Baixar Todos (.zip)</button>
+    </div>
+    <div class="res-section" id="img-res" style="display:none">
+      <h2>Resultados</h2>
+      <div class="res-grid" id="res-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB PDF -->
+  <div class="panel" id="tab-pdf">
+    <div class="dz" id="pdf-dz">
+      <svg width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+      </svg>
+      <p><span>Clique para selecionar</span> ou arraste o PDF aqui</p>
+      <p class="fmt">Apenas .PDF</p>
+      <input type="file" id="pdf-fi" accept=".pdf"/>
+    </div>
+    <div id="pdf-info">
+      <p class="pdf-meta">PDF: <strong id="pdf-name-lbl"></strong> — <strong id="pdf-pages-lbl"></strong> páginas</p>
+      <div class="pdf-opts">
+        <label>DPI: <input type="number" id="pdf-dpi" value="300" min="72" max="600" step="36"/></label>
+        <label><input type="checkbox" id="pdf-rmbg" checked/> Remover fundo branco</label>
+        <label id="pdf-thr-wrap">Tolerância:
+          <input type="range" id="pdf-tol" min="2" max="60" value="15" style="accent-color:var(--accent);width:110px"/>
+          <span id="pdf-tol-v">15</span>
+        </label>
+      </div>
+      <div class="psel-row">
+        <span style="font-size:.8rem;color:var(--muted)">Selecionar:</span>
+        <button class="btn-s" id="psel-all" style="padding:5px 12px;font-size:.76rem">Todas</button>
+        <button class="btn-s" id="psel-none" style="padding:5px 12px;font-size:.76rem">Nenhuma</button>
+        <span id="psel-cnt" style="font-size:.76rem;color:var(--muted)"></span>
+      </div>
+      <div class="pages-grid" id="pages-grid"></div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn-p" id="btn-extract" disabled>Extrair Selecionadas</button>
+        <button class="btn-g" id="btn-pdf-zip" style="display:none">Baixar Todas (.zip)</button>
+      </div>
+      <div class="res-section" id="pdf-res" style="display:none">
+        <h2>Elementos Extraídos</h2>
+        <div class="res-grid" id="pdf-res-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDITOR MODAL ══════════════════════════════════════════ -->
+<div class="ed-modal" id="ed-modal">
+  <div class="ed-header">
+    <button class="ed-nav" id="ed-prev">‹</button>
+    <button class="ed-nav" id="ed-next">›</button>
+    <span class="ed-name" id="ed-name"></span>
+    <span class="ed-ctr" id="ed-ctr"></span>
+    <div class="ed-sp"></div>
+    <div class="ed-acts">
+      <button class="ed-tab active" id="ed-cmp">Comparar</button>
+      <button class="ed-tab" id="ed-edt">Editar</button>
+      <span id="zoom-lbl" style="font-size:.72rem;color:var(--muted);display:none;min-width:36px;text-align:right">100%</span>
+      <button class="ed-x" id="ed-zoom-fit" title="Encaixar na tela" style="display:none;font-size:.8rem">⊡</button>
+      <button class="ed-x" id="ed-undo" title="Desfazer (Ctrl+Z)" style="display:none;font-size:.9rem">↩</button>
+      <button class="ed-dl" id="ed-dl-all" style="background:#1e3a5f;color:#93c5fd;display:none">⬇ Baixar Lote HD</button>
+      <button class="ed-dl" id="ed-save" style="background:#065f46;color:#6ee7b7">💾 Salvar</button>
+      <button class="ed-dl" id="ed-dl">⬇ Baixar</button>
+      <div style="position:relative;display:inline-flex">
+        <button class="ed-dl" id="ed-svg" title="SVG com qualidade original" style="background:#3b0764;color:#d8b4fe;border-radius:7px 0 0 7px;border-right:1px solid #6d28d9">〈/〉 SVG</button>
+        <button id="ed-svg-menu" title="Opções SVG" style="background:#3b0764;color:#d8b4fe;border:none;border-radius:0 7px 7px 0;padding:0 7px;cursor:pointer;font-size:.85rem">▾</button>
+        <div id="svg-mode-menu" style="display:none;position:absolute;top:100%;right:0;background:#1e1b2e;border:1px solid #6d28d9;border-radius:7px;min-width:170px;z-index:99;overflow:hidden">
+          <button class="svg-mode-opt active-mode" data-mode="embed" style="display:block;width:100%;padding:8px 14px;background:none;border:none;color:#d8b4fe;text-align:left;cursor:pointer;font-size:.83rem">✓ Embed (qualidade original)</button>
+          <button class="svg-mode-opt" data-mode="trace" style="display:block;width:100%;padding:8px 14px;background:none;border:none;color:#d8b4fe;text-align:left;cursor:pointer;font-size:.83rem">Vetor (traçado — logos)</button>
+        </div>
+      </div>
+      <button class="ed-x" id="ed-x">✕</button>
+    </div>
+  </div>
+
+  <!-- barra de opções de qualidade/tamanho -->
+  <div id="ed-opts-bar">
+    <label class="eopt-lbl">✨ Nitidez</label>
+    <button class="eopt-tog" id="ed-sharpen">Off</button>
+    <div class="eopt-sep"></div>
+    <label class="eopt-lbl">Tamanho</label>
+    <select id="ed-size-sel">
+      <option value="1">Original (100%)</option>
+      <option value="2">2× (dobro)</option>
+      <option value="1.5">1.5× (150%)</option>
+      <option value="0.75">75%</option>
+      <option value="0.5">50%</option>
+    </select>
+    <div class="eopt-sep"></div>
+    <label class="eopt-lbl">🔍 Upscale</label>
+    <select id="ed-upscale" title="Ampliar HD — aplicado ao Salvar">
+      <option value="0">Não</option>
+      <option value="2">2× HD</option>
+      <option value="4">4× HD</option>
+    </select>
+    <div class="eopt-sep"></div>
+    <label class="eopt-lbl">🖼 Fundo</label>
+    <button class="eopt-tog" id="ed-bg-toggle">Off</button>
+  </div>
+
+  <!-- painel de fundo -->
+  <div id="bg-panel">
+    <div class="bg-type-row">
+      <button class="bg-type-btn active" data-type="none">Nenhum</button>
+      <button class="bg-type-btn" data-type="color">Cor Sólida</button>
+      <button class="bg-type-btn" data-type="gradient">Gradiente</button>
+      <button class="bg-type-btn" data-type="image">Imagem</button>
+    </div>
+    <div class="bg-content" id="bg-content">
+      <!-- none: vazio -->
+      <div id="bg-c" style="display:none;align-items:center;gap:10px;display:none">
+        <label class="eopt-lbl">Cor:</label>
+        <input type="color" id="bg-color" value="#ffffff" style="width:38px;height:28px;padding:0;border:none;cursor:pointer;border-radius:5px"/>
+      </div>
+      <!-- gradient -->
+      <div id="bg-g" style="display:none;align-items:center;gap:10px;display:none">
+        <label class="eopt-lbl">De:</label>
+        <input type="color" id="bg-gc1" value="#f0f0f0" style="width:38px;height:28px;padding:0;border:none;cursor:pointer;border-radius:5px"/>
+        <label class="eopt-lbl">Para:</label>
+        <input type="color" id="bg-gc2" value="#888888" style="width:38px;height:28px;padding:0;border:none;cursor:pointer;border-radius:5px"/>
+        <label class="eopt-lbl">Direção:</label>
+        <select id="bg-gdir" style="padding:3px 7px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.74rem">
+          <option value="to right">→ Horizontal</option>
+          <option value="to bottom" selected>↓ Vertical</option>
+          <option value="to bottom right">↘ Diagonal</option>
+          <option value="to top right">↗ Diagonal (inv)</option>
+          <option value="circle">◎ Radial</option>
+        </select>
+      </div>
+      <!-- image -->
+      <div id="bg-i" style="display:none;width:100%">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <button id="bg-upload-btn" style="padding:4px 12px;font-size:.75rem;background:#1e3a5f;color:#93c5fd;border:1px solid #2563eb;border-radius:6px;cursor:pointer">+ Adicionar imagens</button>
+          <span id="bg-upload-msg" style="font-size:.73rem;color:#6ee7b7;display:none"></span>
+          <input type="file" id="bg-upload-fi" accept="image/png,image/jpeg,image/webp" multiple style="display:none"/>
+        </div>
+        <div id="bg-img-grid"></div>
+        <p class="bg-empty-msg" id="bg-no-imgs" style="display:none;font-size:.75rem;color:var(--muted)">
+          Nenhuma imagem ainda — clique em "+ Adicionar imagens".
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ed-vp" id="ed-vp">
+    <!-- ── Comparação ── -->
+    <div id="cmp-view">
+      <div class="cmp-side before" id="cmp-before">
+        <img id="cmp-bi" alt="antes"/>
+      </div>
+      <div class="cmp-side after" id="cmp-after">
+        <img id="cmp-ai" alt="depois"/>
+        <canvas id="cmp-cv" style="display:none;max-width:100%;max-height:100%;object-fit:contain"></canvas>
+      </div>
+      <div class="cmp-divider" id="cmp-div"></div>
+      <div class="cmp-handle" id="cmp-hnd">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5">
+          <path d="M8 4l-4 8 4 8M16 4l4 8-4 8"/>
+        </svg>
+      </div>
+      <span class="cmp-lbl bl">Antes</span>
+      <span class="cmp-lbl al">Depois</span>
+    </div>
+
+    <!-- ── Edição ── -->
+    <div id="edit-view">
+      <div id="cv-wrap">
+        <canvas id="edit-canvas"></canvas>
+        <canvas id="guide-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="brush-bar" id="brush-bar">
+    <div class="bgrp">
+      <button class="btool active" id="bt-e">✂ Apagar</button>
+      <button class="btool r"      id="bt-r">↺ Restaurar</button>
+      <button class="btool l"      id="bt-l">⬟ Laço</button>
+      <button class="btool s"      id="bt-s">⬡ Selecionar</button>
+      <button class="btool g"      id="bt-g">⟳ Girar</button>
+    </div>
+    <div class="bgrp" id="grp-size">
+      <span>Tamanho</span>
+      <input type="range" id="bsz-sl" min="4" max="200" value="20"/>
+      <span id="bsz-v" style="font-size:.78rem;min-width:32px">20px</span>
+    </div>
+    <div class="bgrp" id="grp-tol" style="display:none">
+      <span>Tolerância</span>
+      <input type="range" id="ftol-sl" min="0" max="2" step="1" value="1"/>
+      <span id="ftol-v" style="font-size:.78rem;min-width:40px;color:var(--text)">Média</span>
+    </div>
+    <div class="bgrp" id="grp-fill-action" style="display:none">
+      <button class="btool fs active" id="bt-fa-rm">− Remover</button>
+      <button class="btool fs"        id="bt-fa-ad">+ Adicionar</button>
+    </div>
+    <div class="bgrp" id="grp-lasso-mode" style="display:none">
+      <button class="btool active" id="bt-lm-free"  title="Traço livre — arraste">Livre</button>
+      <button class="btool"        id="bt-lm-poly"  title="Polígono — linhas retas entre cliques">Polígono</button>
+      <button class="btool"        id="bt-lm-curve" title="Curva suave — cliques geram spline">Curva</button>
+    </div>
+    <div class="bgrp" id="grp-lasso-side" style="display:none">
+      <span style="font-size:.74rem;color:var(--muted)">Aplicar no:</span>
+      <button class="btool active" id="bt-ls-in"  title="A ação afeta o que está DENTRO do traço">Interior</button>
+      <button class="btool"        id="bt-ls-out" title="A ação afeta o que está FORA do traço">Exterior</button>
+    </div>
+    <span class="fill-hint" id="fill-hint">Clique numa região para selecionar</span>
+    <span class="fill-hint" id="lasso-hint">Arraste para traçar livremente · Solte para aplicar</span>
+    <span class="fill-hint" id="lasso-poly-hint">Clique para adicionar pontos · Duplo-clique ou Enter para fechar</span>
+    <span class="fill-hint" id="lasso-curve-hint">Clique para adicionar curvas · Duplo-clique ou Enter para fechar</span>
+    <span class="fill-hint" id="rot-hint">Clique e arraste para girar · Solte para aplicar</span>
+    <span id="rot-deg" style="font-size:.76rem;color:#fde68a;display:none">0°</span>
+    <span class="tip-edit" id="brush-tip">Apagar remove · Restaurar devolve o original</span>
+    <div class="bgrp bgrp-sep">
+      <button class="btool s" id="bt-clean-lv" title="1 passada: apara pixels a mais e preenche pixels a menos (1px)">🧹 Leve</button>
+      <button class="btool s" id="bt-clean-md" title="2 passadas: corrige bordas mais irregulares (2px)">🧹 Médio</button>
+      <button class="btool s" id="bt-clean-hv" title="3 passadas: suavização agressiva de borda (3px)">🧹 Forte</button>
+    </div>
+  </div>
+</div>
+
+<!-- brush cursor -->
+<div id="bcursor"></div>
+<!-- progress -->
+<div class="prog" id="prog"><div class="spin"></div><p id="prog-msg">Processando...</p><p class="cnt" id="prog-cnt"></p></div>
+<!-- banner de atualização -->
+<div id="update-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:.83rem;font-weight:600;
+  z-index:600;display:none;align-items:center;gap:14px;box-shadow:0 4px 20px rgba(0,0,0,.5)">
+  <span id="update-msg">Nova versão disponível!</span>
+  <button onclick="fetch('/restart',{method:'POST'}).then(()=>{
+    document.getElementById('update-banner').style.display='none';
+    setTimeout(()=>location.reload(),1500);
+  })" style="background:#6ee7b7;color:#065f46;border:none;border-radius:6px;
+    padding:5px 14px;font-weight:700;cursor:pointer;font-size:.8rem">
+    Aplicar e reiniciar
+  </button>
+</div>
+
+<script>
+// ── utils ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+// ── verifica atualização disponível (polling leve) ────────────────
+(function checkUpdate(){
+  setTimeout(async function poll(){
+    try{
+      const d = await fetch('/update-status').then(r=>r.json());
+      if(d.updated){
+        const b=document.getElementById('update-banner');
+        document.getElementById('update-msg').textContent=
+          `Nova versão v${d.new_version} baixada — clique para aplicar`;
+        b.style.display='flex';
+        return;
+      }
+    }catch(e){}
+    if(!document.getElementById('update-banner').style.display.includes('flex'))
+      setTimeout(poll, 30000);
+  }, 8000);
+})();
+const showP = (m,c)=>{ $('prog-msg').textContent=m; $('prog-cnt').textContent=c||''; $('prog').classList.add('on'); };
+const hideP = ()=>$('prog').classList.remove('on');
+async function dlZip(files,name){
+  const r=await fetch('/download-zip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({files})});
+  const b=await r.blob(); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click();
+}
+
+// ── tabs ─────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab,.panel').forEach(e=>e.classList.remove('active'));
+  b.classList.add('active'); $('tab-'+b.dataset.tab).classList.add('active');
+}));
+
+// ── IMAGE TAB ────────────────────────────────────────────────────
+const dz=$('dz'),fi=$('fi');
+let fileQ=[],edItems=[],selMode='ai';
+
+dz.addEventListener('click',()=>fi.click());
+fi.addEventListener('change',()=>{addFiles([...fi.files]);fi.value='';});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles([...e.dataTransfer.files]);});
+
+document.querySelectorAll('.topt').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.topt').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); selMode=b.dataset.mode;
+  $('white-opts').style.display=selMode==='white'?'block':'none';
+  $('tip-ai').style.display=selMode==='ai'?'block':'none';
+  $('tip-white').style.display=selMode==='white'?'block':'none';
+}));
+
+$('img-tol').addEventListener('input',function(){
+  $('itv').textContent=this.value;
+  $('tol-hint').textContent=+this.value<=10?'Conservador — use se cortar demais':
+    +this.value<=25?'Padrão — bom para artes do PDF':'Alto — use se sobrar borda branca';
+});
+
+function addFiles(files){files.forEach(f=>{if(!fileQ.find(q=>q.name===f.name&&q.size===f.size))fileQ.push(f);});renderQ();}
+function renderQ(){
+  $('queue').innerHTML='';
+  fileQ.forEach((f,i)=>{
+    const d=document.createElement('div'); d.className='qi';
+    const img=document.createElement('img'); img.className='qi-thumb';
+    img.src=URL.createObjectURL(f); img.alt='';
+    const fn=document.createElement('span'); fn.className='fn'; fn.title=f.name; fn.textContent=f.name;
+    const rm=document.createElement('button'); rm.className='rm'; rm.dataset.i=i; rm.textContent='✕';
+    d.append(img,fn,rm); $('queue').appendChild(d);
+  });
+  $('queue').querySelectorAll('.rm').forEach(b=>b.addEventListener('click',()=>{
+    URL.revokeObjectURL($('queue').querySelectorAll('.qi-thumb')[+b.dataset.i]?.src);
+    fileQ.splice(+b.dataset.i,1); renderQ();
+  }));
+  $('btn-proc').disabled=fileQ.length===0;
+}
+$('btn-clear').addEventListener('click',()=>{fileQ=[];edItems=[];renderQ();$('res-grid').innerHTML='';$('img-res').style.display='none';$('btn-zip').style.display='none';});
+
+$('btn-proc').addEventListener('click',async()=>{
+  if(!fileQ.length)return;
+  edItems=[];$('res-grid').innerHTML='';$('img-res').style.display='block';$('btn-proc').disabled=true;
+  for(let i=0;i<fileQ.length;i+=4){
+    const batch=fileQ.slice(i,i+4);
+    showP('Removendo fundos…',`${Math.min(i+4,fileQ.length)} de ${fileQ.length}`);
+    const form=new FormData();
+    batch.forEach(f=>form.append('files',f));
+    form.append('mode',selMode);form.append('tolerance',$('img-tol').value);
+    try{
+      const data=await fetch('/remove',{method:'POST',body:form}).then(r=>r.json());
+      data.results.forEach(r=>{const idx=edItems.length;edItems.push(r);addCard(r,idx,$('res-grid'));});
+    }catch{batch.forEach(f=>{edItems.push({name:f.name,error:'Erro'});addCard({name:f.name,error:'Erro'},edItems.length-1,$('res-grid'));});}
+  }
+  hideP();$('btn-proc').disabled=false;
+  if(edItems.filter(x=>x.result).length>1)$('btn-zip').style.display='inline-block';
+});
+$('btn-zip').addEventListener('click',()=>dlZip(edItems.filter(x=>x.result).map(x=>x.result),'imagens_sem_fundo.zip'));
+
+function addCard(r,idx,grid){
+  const c=document.createElement('div');c.className='rcard'+(r.error?' error':'');
+  if(r.error){
+    c.innerHTML=`<div class="card-err">Erro: ${r.error}</div><div class="card-foot"><span class="card-name">${r.name}</span></div>`;
+  } else {
+    c.innerHTML=`
+      <div class="card-split">
+        <div class="cs-b"><img src="/original/${r.original}" loading="lazy"/></div>
+        <div class="cs-a"><img src="/result/${r.result}" loading="lazy"/></div>
+        <span class="cs-lbl bl">Antes</span><span class="cs-lbl al">Depois</span>
+      </div>
+      <div class="card-foot">
+        <span class="card-name" title="${r.name}">${r.name}</span>
+        <button class="btn-edit" data-idx="${idx}">Editar</button>
+        <a class="btn-dl-sm" href="/download/${r.result}" download>⬇</a>
+      </div>`;
+    c.querySelector('.btn-edit').addEventListener('click',()=>openEditor(edItems,idx));
+  }
+  grid.appendChild(c);
+}
+
+// ── PDF TAB ──────────────────────────────────────────────────────
+const pdfDz=$('pdf-dz'),pdfFi=$('pdf-fi');
+let pdfData=null,pdfSel=new Set(),pdfItems=[];
+pdfDz.addEventListener('click',()=>pdfFi.click());
+pdfFi.addEventListener('change',()=>{if(pdfFi.files[0])loadPdf(pdfFi.files[0]);pdfFi.value='';});
+pdfDz.addEventListener('dragover',e=>{e.preventDefault();pdfDz.classList.add('over');});
+pdfDz.addEventListener('dragleave',()=>pdfDz.classList.remove('over'));
+pdfDz.addEventListener('drop',e=>{e.preventDefault();pdfDz.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.name.toLowerCase().endsWith('.pdf'))loadPdf(f);});
+$('pdf-tol').addEventListener('input',function(){$('pdf-tol-v').textContent=this.value;});
+$('pdf-rmbg').addEventListener('change',function(){$('pdf-thr-wrap').style.opacity=this.checked?'1':'.4';});
+
+async function loadPdf(file){
+  showP('Carregando PDF…','');
+  const form=new FormData();form.append('file',file);
+  try{
+    const data=await fetch('/pdf/info',{method:'POST',body:form}).then(r=>r.json());
+    if(data.error){alert(data.error);hideP();return;}
+    pdfData=data.pdf_data;$('pdf-name-lbl').textContent=file.name;$('pdf-pages-lbl').textContent=data.pages;
+    pdfSel=new Set(data.thumbs.map(t=>t.page));
+    renderThumbs(data.thumbs);$('pdf-info').style.display='block';
+    $('pdf-res').style.display='none';$('pdf-res-grid').innerHTML='';$('btn-pdf-zip').style.display='none';pdfItems=[];
+    updateExtBtn();
+  }catch{alert('Erro ao carregar PDF.');}
+  hideP();
+}
+function renderThumbs(thumbs){
+  const g=$('pages-grid');g.innerHTML='';
+  thumbs.forEach(t=>{
+    const d=document.createElement('div');d.className='pthumb'+(pdfSel.has(t.page)?' sel':'');d.dataset.page=t.page;
+    d.innerHTML=`<img src="${t.thumb}"/><div class="pn">Pág. ${t.page}</div>`;
+    d.addEventListener('click',()=>{pdfSel.has(t.page)?(pdfSel.delete(t.page),d.classList.remove('sel')):(pdfSel.add(t.page),d.classList.add('sel'));updatePdfCnt();updateExtBtn();});
+    g.appendChild(d);
+  });
+  updatePdfCnt();
+}
+function updatePdfCnt(){$('psel-cnt').textContent=`${pdfSel.size} selecionada${pdfSel.size!==1?'s':''}`;}
+function updateExtBtn(){$('btn-extract').disabled=pdfSel.size===0;}
+$('psel-all').addEventListener('click',()=>{document.querySelectorAll('.pthumb').forEach(e=>{pdfSel.add(+e.dataset.page);e.classList.add('sel');});updatePdfCnt();updateExtBtn();});
+$('psel-none').addEventListener('click',()=>{pdfSel.clear();document.querySelectorAll('.pthumb').forEach(e=>e.classList.remove('sel'));updatePdfCnt();updateExtBtn();});
+
+$('btn-extract').addEventListener('click',async()=>{
+  if(!pdfData||!pdfSel.size)return;
+  pdfItems=[];$('pdf-res-grid').innerHTML='';$('pdf-res').style.display='block';$('btn-extract').disabled=true;
+  const pages=[...pdfSel].sort((a,b)=>a-b);
+  for(let i=0;i<pages.length;i+=3){
+    const batch=pages.slice(i,i+3);
+    showP('Extraindo páginas…',`${Math.min(i+3,pages.length)} de ${pages.length}`);
+    try{
+      const data=await fetch('/pdf/extract',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({pages:batch,pdf_data:pdfData,dpi:+$('pdf-dpi').value,remove_bg:$('pdf-rmbg').checked,threshold:+$('pdf-tol').value})}).then(r=>r.json());
+      data.results.forEach(r=>{
+        const item={name:`Página ${r.page}`,result:r.result,original:r.original,error:r.error};
+        const idx=pdfItems.length;pdfItems.push(item);addCard(item,idx,$('pdf-res-grid'));
+      });
+    }catch{batch.forEach(p=>{pdfItems.push({name:`Página ${p}`,error:'Erro'});});}
+  }
+  // wire edit buttons
+  $('pdf-res-grid').querySelectorAll('.btn-edit').forEach(b=>b.addEventListener('click',()=>openEditor(pdfItems,+b.dataset.idx)));
+  hideP();$('btn-extract').disabled=false;
+  if(pdfItems.filter(x=>x.result).length>1)$('btn-pdf-zip').style.display='inline-block';
+});
+$('btn-pdf-zip').addEventListener('click',()=>dlZip(pdfItems.filter(x=>x.result).map(x=>x.result),'elementos_extraidos.zip'));
+
+// ══ EDITOR ═══════════════════════════════════════════════════════
+let edList=[],edIdx=0,edMode='compare';
+let ecv=null,ectx=null;
+let origPixels=null;  // Uint8ClampedArray RGBA do JPEG original (nunca modificado)
+let alphaMask=null;   // Uint8Array (W*H) — 0=transparente, 255=opaco
+let brushPainting=false,brushMode='erase',brushSize=20,lastPt=null;
+// ── Estado do fundo ───────────────────────────────────────────
+let bgConfig={type:'none', color:'#ffffff', gc1:'#f0f0f0', gc2:'#888888', gdir:'to bottom', imgSrc:null};
+let bgImgEl=null;   // Image element para fundo tipo "image"
+
+function drawBgOnCtx(ctx, W, H){
+  const t=bgConfig.type;
+  if(t==='color'){
+    ctx.fillStyle=bgConfig.color; ctx.fillRect(0,0,W,H);
+  } else if(t==='gradient'){
+    let grad;
+    if(bgConfig.gdir==='circle'){
+      grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)/2);
+    } else {
+      const dirs={'to right':[0,0,W,0],'to bottom':[0,0,0,H],'to bottom right':[0,0,W,H],'to top right':[0,H,W,0]};
+      const [x0,y0,x1,y1]=dirs[bgConfig.gdir]||[0,0,0,H];
+      grad=ctx.createLinearGradient(x0,y0,x1,y1);
+    }
+    grad.addColorStop(0,bgConfig.gc1); grad.addColorStop(1,bgConfig.gc2);
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  } else if(t==='image'&&bgImgEl&&bgImgEl.complete){
+    // cover: preenche canvas mantendo proporção
+    const iw=bgImgEl.naturalWidth, ih=bgImgEl.naturalHeight;
+    const sc=Math.max(W/iw, H/ih);
+    const sw=iw*sc, sh=ih*sc;
+    ctx.drawImage(bgImgEl,(W-sw)/2,(H-sh)/2,sw,sh);
+  }
+}
+
+function hasBg(){ return bgConfig.type!=='none'; }
+
+// Carrega imagens da pasta backgrounds/
+async function loadBgImages(){
+  try{
+    const data=await fetch('/backgrounds').then(r=>r.json());
+    const grid=$('bg-img-grid');
+    grid.innerHTML='';
+    if(!data.files||!data.files.length){$('bg-no-imgs').style.display='block';return;}
+    $('bg-no-imgs').style.display='none';
+    data.files.forEach(fn=>{
+      const img=document.createElement('img');
+      img.className='bg-img-th'; img.src=`/bg-img/${encodeURIComponent(fn)}`; img.title=fn;
+      img.addEventListener('click',()=>{
+        document.querySelectorAll('.bg-img-th').forEach(x=>x.classList.remove('active'));
+        img.classList.add('active');
+        bgConfig.imgSrc=img.src;
+        bgImgEl=new Image(); bgImgEl.src=img.src;
+        bgImgEl.onload=()=>redrawCanvas();
+      });
+      grid.appendChild(img);
+    });
+  }catch(e){console.warn('backgrounds:',e);}
+}
+
+// Upload de imagens de fundo
+$('bg-upload-btn').addEventListener('click',()=>$('bg-upload-fi').click());
+$('bg-upload-fi').addEventListener('change',async()=>{
+  const files=$('bg-upload-fi').files;
+  if(!files.length) return;
+  const msg=$('bg-upload-msg');
+  msg.textContent='Enviando…'; msg.style.display='inline'; msg.style.color='#fde68a';
+  const fd=new FormData();
+  for(const f of files) fd.append('files',f);
+  try{
+    const res=await fetch('/bg-upload',{method:'POST',body:fd}).then(r=>r.json());
+    if(res.ok){
+      msg.textContent=`✓ ${res.files.length} imagem${res.files.length!==1?'s':''} adicionada${res.files.length!==1?'s':''}`;
+      msg.style.color='#6ee7b7';
+      await loadBgImages();
+      setTimeout(()=>{msg.style.display='none';},3000);
+    }
+  }catch(e){
+    msg.textContent='Erro no upload'; msg.style.color='#f87171';
+  }
+  $('bg-upload-fi').value='';
+});
+
+// Troca tipo de fundo
+function setBgType(type){
+  bgConfig.type=type;
+  document.querySelectorAll('.bg-type-btn').forEach(b=>b.classList.toggle('active',b.dataset.type===type));
+  $('bg-c').style.display=type==='color'?'flex':'none';
+  $('bg-g').style.display=type==='gradient'?'flex':'none';
+  $('bg-i').style.display=type==='image'?'block':'none';
+  if(type==='image') loadBgImages();
+  redrawCanvas();
+}
+
+document.querySelectorAll('.bg-type-btn').forEach(b=>b.addEventListener('click',()=>setBgType(b.dataset.type)));
+$('bg-color').addEventListener('input',e=>{bgConfig.color=e.target.value;redrawCanvas();});
+$('bg-gc1').addEventListener('input',e=>{bgConfig.gc1=e.target.value;redrawCanvas();});
+$('bg-gc2').addEventListener('input',e=>{bgConfig.gc2=e.target.value;redrawCanvas();});
+$('bg-gdir').addEventListener('change',e=>{bgConfig.gdir=e.target.value;redrawCanvas();});
+
+$('ed-bg-toggle').addEventListener('click',()=>{
+  const isOn=$('bg-panel').classList.toggle('on');
+  $('ed-bg-toggle').textContent=isOn?'On ✓':'Off';
+  $('ed-bg-toggle').classList.toggle('bg-on',isOn);
+  if(!isOn){bgConfig.type='none';document.querySelectorAll('.bg-type-btn').forEach(b=>b.classList.toggle('active',b.dataset.type==='none'));redrawCanvas();}
+});
+
+// ── Laço de seleção (livre, polígono e curva) ─────────────────
+// lassoMode: 'free' → arrasta | 'poly' → cliques retos | 'curve' → cliques curvos
+let lassoPoints=[], lassoSegModes=[], lassoActive=false, lassoMode='free', lassoSide='inside';
+
+function setLassoSide(side){
+  lassoSide=side;
+  $('bt-ls-in').classList.toggle('active',side==='inside');
+  $('bt-ls-out').classList.toggle('active',side==='outside');
+}
+$('bt-ls-in').addEventListener('click',()=>setLassoSide('inside'));
+$('bt-ls-out').addEventListener('click',()=>setLassoSide('outside'));
+
+// Congela o trecho de curva atual convertendo os pontos amostrados em vértices poly.
+// Isso garante que novos pontos adicionados depois não alterem a forma já desenhada.
+function bakeCurveRun(){
+  const n=lassoSegModes.length;
+  if(n===0||lassoSegModes[n-1]!=='curve') return; // não termina em curva
+  // Encontra o início do trecho de curva no final da lista
+  let runStart=n-1;
+  while(runStart>0&&lassoSegModes[runStart-1]==='curve') runStart--;
+  // lassoPoints[runStart..n] são os pontos deste trecho de curva
+  const curvePts=lassoPoints.slice(runStart, n+1);
+  if(curvePts.length<2) return;
+  // Inclui ponto anterior como contexto de tangente
+  const prevPt=runStart>0?lassoPoints[runStart-1]:null;
+  const forSpline=prevPt?[prevPt,...curvePts]:curvePts;
+  const sampled=catmullRomSample(forSpline,14);
+  // Extrai só a parte da curva (sem o segmento de contexto)
+  const bakedPts=prevPt?sampled.slice(14):sampled;
+  // Reconstrói lassoPoints e lassoSegModes com os pontos baked como poly
+  lassoPoints=[...lassoPoints.slice(0,runStart+1),...bakedPts.slice(1)];
+  lassoSegModes=[
+    ...lassoSegModes.slice(0,runStart),
+    ...Array(bakedPts.length-1).fill('poly')
+  ];
+}
+
+function setLassoMode(m){
+  const prev=lassoMode;
+  lassoMode=m;
+  $('bt-lm-free').classList.toggle('active',m==='free');
+  $('bt-lm-poly').classList.toggle('active',m==='poly');
+  $('bt-lm-curve').classList.toggle('active',m==='curve');
+  if(brushMode==='lasso'){
+    $('lasso-hint').classList.toggle('on',m==='free');
+    $('lasso-poly-hint').classList.toggle('on',m==='poly');
+    $('lasso-curve-hint').classList.toggle('on',m==='curve');
+  }
+  if((prev==='poly'||prev==='curve')&&(m==='poly'||m==='curve')){
+    if(lassoPoints.length>0){
+      // Ao sair de curva: congela o trecho atual para que pontos futuros não o alterem
+      if(prev==='curve') bakeCurveRun();
+      drawLassoOverlay();
+    }
+    return;
+  }
+  cancelLasso();
+}
+$('bt-lm-free').addEventListener('click',()=>setLassoMode('free'));
+$('bt-lm-poly').addEventListener('click',()=>setLassoMode('poly'));
+$('bt-lm-curve').addEventListener('click',()=>setLassoMode('curve'));
+
+// Catmull-Rom spline: suaviza o traçado passando por todos os pontos clicados
+// Retorna array de pontos amostrados ao longo da curva
+function catmullRomSample(pts, steps=14){
+  if(pts.length<2) return pts.slice();
+  const n=pts.length;
+  const p=[pts[0],...pts,pts[n-1]]; // pontos fantasma nas extremidades
+  const out=[];
+  for(let i=0;i<n-1;i++){
+    const p0=p[i],p1=p[i+1],p2=p[i+2],p3=p[i+3];
+    for(let s=0;s<=steps;s++){
+      const t=s/steps, t2=t*t, t3=t2*t;
+      out.push({
+        x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+        y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3),
+      });
+    }
+  }
+  return out;
+}
+
+// Traça o path respeitando o modo de cada segmento individualmente.
+// segModes[i] = modo do segmento entre pts[i] e pts[i+1] ('poly'|'curve')
+function buildLassoPath(ctx, pts, segModes, live, liveMode){
+  if(!pts.length) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+
+  let i=0;
+  let liveHandled=false;
+
+  while(i < pts.length-1){
+    if(segModes[i]==='poly'){
+      ctx.lineTo(pts[i+1].x, pts[i+1].y);
+      i++;
+    } else {
+      // Agrupa run consecutivo de curvas
+      let j=i;
+      while(j < pts.length-1 && segModes[j]==='curve') j++;
+
+      // Inclui ponto anterior como contexto de tangente (evita curva reta em segmento isolado)
+      const hasPrev=(i>0);
+      let run=hasPrev ? [pts[i-1],...pts.slice(i,j+1)] : pts.slice(i,j+1);
+
+      // Se o live também é curva e este é o último run, inclui no spline
+      const withLive=(live && liveMode==='curve' && j===pts.length-1);
+      if(withLive){ run=[...run, live]; liveHandled=true; }
+
+      if(run.length>=2){
+        const s=catmullRomSample(run);
+        // Pula o segmento de contexto se adicionamos ponto anterior
+        const startK=hasPrev ? 14 : 0;
+        for(let k=startK+1;k<s.length;k++) ctx.lineTo(s[k].x,s[k].y);
+      }
+      if(liveHandled) return;
+      i=j;
+    }
+  }
+
+  // Live preview não tratado por nenhum run de curva
+  if(live && !liveHandled){
+    if(liveMode==='curve'){
+      // Inclui pontos anteriores para tangente: [penúltimo, último, cursor]
+      const ctx2=pts.length>=2
+        ? [pts[pts.length-2], pts[pts.length-1], live]
+        : [pts[pts.length-1], live];
+      const s=catmullRomSample(ctx2);
+      // Pula todos os segmentos exceto o último (último pt → cursor)
+      const skip=(ctx2.length-2)*14;
+      for(let k=skip+1;k<s.length;k++) ctx.lineTo(s[k].x,s[k].y);
+    } else {
+      ctx.lineTo(live.x, live.y);
+    }
+  }
+}
+
+// Enter fecha polígono/curva; Escape cancela
+document.addEventListener('keydown',e=>{
+  if(brushMode!=='lasso') return;
+  if(e.key==='Enter'&&lassoMode!=='free'&&lassoPoints.length>=3){e.preventDefault();finishLasso();}
+  if(e.key==='Escape'){e.preventDefault();cancelLasso();}
+});
+
+function drawLassoOverlay(mousePos){
+  const gc=$('guide-canvas'); if(!gc||!ecv) return;
+  gc.width=ecv.width; gc.height=ecv.height; gc.style.display='block';
+  const ctx=gc.getContext('2d');
+  ctx.clearRect(0,0,gc.width,gc.height);
+  if(lassoPoints.length<1) return;
+  const lw=Math.max(1,1.5/edZoom), ds=Math.max(4,6/edZoom);
+  const isClickMode=(lassoMode==='poly'||lassoMode==='curve');
+
+  // Traço principal
+  ctx.strokeStyle='rgba(255,220,0,0.95)'; ctx.lineWidth=lw;
+  ctx.setLineDash([ds,ds/2]);
+  buildLassoPath(ctx, lassoPoints, lassoSegModes, isClickMode?mousePos:null, lassoMode);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Linha de fechamento (tracejada fraca) — mostra onde vai fechar
+  if(lassoPoints.length>2){
+    const endPt=isClickMode&&mousePos?mousePos:lassoPoints[lassoPoints.length-1];
+    ctx.strokeStyle='rgba(255,220,0,0.3)'; ctx.lineWidth=lw;
+    ctx.setLineDash([ds/2,ds]);
+    ctx.beginPath();
+    ctx.moveTo(endPt.x,endPt.y);
+    ctx.lineTo(lassoPoints[0].x,lassoPoints[0].y);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Marcador no ponto inicial
+  const r0=Math.max(3,5/edZoom);
+  ctx.fillStyle='rgba(255,220,0,0.9)';
+  ctx.beginPath(); ctx.arc(lassoPoints[0].x,lassoPoints[0].y,r0,0,Math.PI*2); ctx.fill();
+
+  // Vértices dos modos click
+  if(isClickMode){
+    ctx.fillStyle='rgba(255,220,0,0.55)';
+    for(let i=1;i<lassoPoints.length;i++){
+      ctx.beginPath();
+      ctx.arc(lassoPoints[i].x,lassoPoints[i].y,Math.max(2,3/edZoom),0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+}
+
+function applyLasso(){
+  if(!alphaMask||!ecv||lassoPoints.length<3) return;
+  pushUndo();
+  const W=ecv.width, H=ecv.height;
+  // Pinta o traçado fechado num canvas auxiliar: interior=branco, exterior=preto
+  const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+  const ctx=tmp.getContext('2d');
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#fff';
+  buildLassoPath(ctx, lassoPoints, lassoSegModes, null, lassoMode);
+  ctx.closePath(); ctx.fill();
+  const pix=ctx.getImageData(0,0,W,H).data;
+  const newA=fillAction==='remove'?0:255;
+  const applyInside=lassoSide==='inside';
+  for(let i=0;i<W*H;i++){
+    const inside=pix[i*4]>128;
+    if(applyInside?inside:!inside) alphaMask[i]=newA;
+  }
+  redrawCanvas();
+}
+
+function finishLasso(){
+  applyLasso();
+  lassoPoints=[]; lassoSegModes=[]; lassoActive=false; clearLassoOverlay();
+}
+
+function clearLassoOverlay(){
+  const gc=$('guide-canvas'); if(gc) gc.style.display='none';
+}
+
+function cancelLasso(){
+  lassoPoints=[]; lassoSegModes=[]; lassoActive=false; clearLassoOverlay();
+}
+
+// Níveis de tolerância do flood-fill: tol=dist máx ao pixel semente, edgeStop=borda máx entre vizinhos
+const FILL_LEVELS=[
+  {label:'Baixa', tol:15, edgeStop:18},
+  {label:'Média', tol:40, edgeStop:38},
+  {label:'Alta',  tol:80, edgeStop:65},
+];
+let fillLevel=1;
+
+// ── Zoom + Pan ────────────────────────────────────────────────
+let edZoom=1, edPanX=0, edPanY=0;
+let panDragging=false, panLastX=0, panLastY=0;
+
+// O container (#cv-wrap) usa transform-origin:0 0
+// transform = translate(panX,panY) scale(zoom) [+ rotate durante drag]
+function applyTransform(rotExtra=0){
+  const wrap=$('cv-wrap'); if(!wrap||!ecv) return;
+  let t=`translate(${edPanX}px,${edPanY}px) scale(${edZoom})`;
+  if(rotExtra){
+    const cx=ecv.width/2, cy=ecv.height/2;
+    t+=` translate(${cx}px,${cy}px) rotate(${rotExtra}deg) translate(${-cx}px,${-cy}px)`;
+  }
+  wrap.style.transform=t;
+}
+
+function resetZoom(){
+  if(!ecv) return;
+  const ev=$('edit-view');
+  const vW=ev.offsetWidth, vH=ev.offsetHeight;
+  edZoom=Math.min(vW/ecv.width, vH/ecv.height, 1);
+  edPanX=(vW-ecv.width*edZoom)/2;
+  edPanY=(vH-ecv.height*edZoom)/2;
+  applyTransform(); showZoomLabel();
+}
+function showZoomLabel(){
+  $('zoom-lbl').textContent=Math.round(edZoom*100)+'%';
+}
+
+// ── Undo ─────────────────────────────────────────────────────
+const undoStack=[];
+const UNDO_MAX=30;
+function pushUndo(){
+  if(!alphaMask) return;
+  undoStack.push(alphaMask.slice()); // copia
+  if(undoStack.length>UNDO_MAX) undoStack.shift();
+  $('ed-undo').style.display='flex';
+}
+function doUndo(){
+  if(!undoStack.length||!alphaMask) return;
+  alphaMask=undoStack.pop();
+  if(!undoStack.length) $('ed-undo').style.display='none';
+  redrawCanvas();
+}
+
+// ── Rotação ───────────────────────────────────────────────────
+let rotDragging=false,rotStartAngle=0,rotMouseStart=0,rotLive=0;
+
+function openEditor(list,idx){
+  edList=list;edIdx=idx;
+  $('ed-modal').classList.add('open');
+  const hasMany=list.filter(x=>x.result).length>1;
+  $('ed-dl-all').style.display=hasMany?'inline-block':'none';
+  loadItem();
+}
+
+function loadItem(){
+  const item=edList[edIdx];
+  $('ed-name').textContent=item.name;
+  $('ed-ctr').textContent=`${edIdx+1}/${edList.length}`;
+  $('ed-prev').disabled=edIdx===0;
+  $('ed-next').disabled=edIdx===edList.length-1;
+  origPixels=null; alphaMask=null; rotLive=0;
+  undoStack.length=0; $('ed-undo').style.display='none';
+  edZoom=1; edPanX=0; edPanY=0;
+  const wrap=$('cv-wrap'); if(wrap) wrap.style.transform='';
+  setMode('edit');
+  if(!item.result) return;
+
+  $('cmp-bi').src=`/original/${item.original}`;
+  $('cmp-ai').src=`/result/${item.result}`;
+  setCmp(50);
+
+  ecv=$('edit-canvas'); ectx=ecv.getContext('2d');
+
+  // 1) Carrega resultado da IA → extrai alphaMask em canvas temporário
+  //    (NÃO desenha no canvas principal para não mostrar o fundo removido antes do original)
+  const ri=new Image(); ri.crossOrigin='anonymous';
+  ri.onload=()=>{
+    const tmpR=document.createElement('canvas');
+    tmpR.width=ri.naturalWidth; tmpR.height=ri.naturalHeight;
+    const tcR=tmpR.getContext('2d');
+    tcR.drawImage(ri,0,0);
+    const rd=tcR.getImageData(0,0,tmpR.width,tmpR.height);
+    const N=tmpR.width*tmpR.height;
+    alphaMask=new Uint8Array(N);
+    for(let i=0;i<N;i++) alphaMask[i]=rd.data[i*4+3];
+
+    ecv.width=tmpR.width; ecv.height=tmpR.height;
+
+    // 2) Carrega original → origPixels (base para restore e flood fill)
+    const oi=new Image();
+    oi.onload=()=>{
+      const tmp=document.createElement('canvas');
+      tmp.width=ecv.width; tmp.height=ecv.height;
+      const tc=tmp.getContext('2d');
+      tc.drawImage(oi,0,0,ecv.width,ecv.height);
+      origPixels=new Uint8ClampedArray(tc.getImageData(0,0,ecv.width,ecv.height).data);
+      setTool('select'); setFillAction('remove');
+      redrawCanvas();
+      resetZoom();
+    };
+    oi.onerror=()=>{
+      // Fallback: usa pixels do resultado da IA como base
+      origPixels=new Uint8ClampedArray(rd.data);
+      setTool('select'); setFillAction('remove');
+      redrawCanvas(); resetZoom();
+    };
+    oi.src=`/original/${item.original}?t=${Date.now()}`;
+  };
+  ri.src=`/result/${item.result}?t=${Date.now()}`;
+}
+
+// ── Renderiza canvas a partir de origPixels + alphaMask ───────
+// selectMode=true  → mostra imagem completa, áreas removidas com tint azul
+// selectMode=false → mostra resultado com transparência real (+ fundo se ativo)
+function redrawCanvas(){
+  if(!ecv||!ectx||!origPixels||!alphaMask) return;
+  const W=ecv.width, H=ecv.height, N=W*H;
+  const id=ectx.createImageData(W,H);
+  const d=id.data;
+  const full=(brushMode==='select'||brushMode==='rotate');
+  for(let i=0;i<N;i++){
+    const p=i*4, a=alphaMask[i];
+    if(full){
+      if(a<128){
+        d[p]  =Math.round(origPixels[p]  *0.35);
+        d[p+1]=Math.round(origPixels[p+1]*0.35);
+        d[p+2]=Math.min(255,Math.round(origPixels[p+2]*0.35+110));
+      } else {
+        d[p]=origPixels[p]; d[p+1]=origPixels[p+1]; d[p+2]=origPixels[p+2];
+      }
+      d[p+3]=255;
+    } else {
+      d[p]=origPixels[p]; d[p+1]=origPixels[p+1]; d[p+2]=origPixels[p+2]; d[p+3]=a;
+    }
+  }
+  if(!full && hasBg()){
+    // Desenha fundo, depois compõe imagem transparente por cima
+    drawBgOnCtx(ectx, W, H);
+    const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+    tmp.getContext('2d').putImageData(id,0,0);
+    ectx.drawImage(tmp,0,0);
+  } else {
+    ectx.putImageData(id,0,0);
+  }
+  // Atualiza preview do comparar se estiver visível
+  if(edMode==='compare') updateCmpAfter();
+}
+
+// Redraw apenas a região afetada pelo pincel (performance)
+// Se há fundo ativo, faz redraw completo (necessário para compor corretamente)
+function redrawRegion(x0,y0,x1,y1){
+  if(!ecv||!ectx||!origPixels||!alphaMask) return;
+  const full=(brushMode==='select'||brushMode==='rotate');
+  if(hasBg()&&!full){redrawCanvas();return;}
+  const W=ecv.width;
+  x0=Math.max(0,x0); y0=Math.max(0,y0);
+  x1=Math.min(ecv.width,x1); y1=Math.min(ecv.height,y1);
+  const w=x1-x0, h=y1-y0; if(w<=0||h<=0) return;
+  const id=ectx.createImageData(w,h); const d=id.data;
+  for(let py=y0;py<y1;py++){
+    for(let px=x0;px<x1;px++){
+      const gi=(py*W+px)*4, li=((py-y0)*w+(px-x0))*4;
+      const a=alphaMask[py*W+px];
+      if(full){
+        if(a<128){
+          d[li]  =Math.round(origPixels[gi]  *0.35);
+          d[li+1]=Math.round(origPixels[gi+1]*0.35);
+          d[li+2]=Math.min(255,Math.round(origPixels[gi+2]*0.35+110));
+        } else {
+          d[li]=origPixels[gi]; d[li+1]=origPixels[gi+1]; d[li+2]=origPixels[gi+2];
+        }
+        d[li+3]=255;
+      } else {
+        d[li]=origPixels[gi]; d[li+1]=origPixels[gi+1]; d[li+2]=origPixels[gi+2]; d[li+3]=a;
+      }
+    }
+  }
+  ectx.putImageData(id,x0,y0);
+}
+
+// Gera canvas final: fundo (se ativo) + imagem com alphaMask
+function buildFinalCanvas(){
+  const W=ecv.width, H=ecv.height;
+  const dst=document.createElement('canvas'); dst.width=W; dst.height=H;
+  const dc=dst.getContext('2d');
+  if(hasBg()) drawBgOnCtx(dc, W, H);
+  // Imagem com transparência real
+  const id=dc.createImageData(W,H); const d=id.data;
+  for(let i=0;i<W*H;i++){
+    const p=i*4;
+    d[p]=origPixels[p]; d[p+1]=origPixels[p+1]; d[p+2]=origPixels[p+2]; d[p+3]=alphaMask[i];
+  }
+  const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+  tmp.getContext('2d').putImageData(id,0,0);
+  dc.drawImage(tmp,0,0);
+  return dst;
+}
+
+// Aplica rotação: bake origPixels + alphaMask no ângulo dado
+function bakeRotation(angleDeg){
+  if(!origPixels||!alphaMask||!ecv) return;
+  const W=ecv.width, H=ecv.height;
+  const rad=angleDeg*Math.PI/180;
+  const cos=Math.abs(Math.cos(rad)), sin=Math.abs(Math.sin(rad));
+  const nW=Math.round(W*cos+H*sin), nH=Math.round(H*cos+W*sin);
+
+  // Rotaciona origPixels
+  const srcC=document.createElement('canvas'); srcC.width=W; srcC.height=H;
+  const sc=srcC.getContext('2d');
+  const sid=sc.createImageData(W,H);
+  for(let i=0;i<W*H;i++){const p=i*4;sid.data[p]=origPixels[p];sid.data[p+1]=origPixels[p+1];sid.data[p+2]=origPixels[p+2];sid.data[p+3]=255;}
+  sc.putImageData(sid,0,0);
+  const dstC=document.createElement('canvas'); dstC.width=nW; dstC.height=nH;
+  const dc=dstC.getContext('2d');
+  dc.translate(nW/2,nH/2); dc.rotate(rad); dc.drawImage(srcC,-W/2,-H/2);
+  origPixels=new Uint8ClampedArray(dc.getImageData(0,0,nW,nH).data);
+
+  // Rotaciona alphaMask (como imagem grayscale)
+  const mC=document.createElement('canvas'); mC.width=W; mC.height=H;
+  const mc=mC.getContext('2d');
+  const mid=mc.createImageData(W,H);
+  for(let i=0;i<W*H;i++){const p=i*4,a=alphaMask[i];mid.data[p]=mid.data[p+1]=mid.data[p+2]=a;mid.data[p+3]=255;}
+  mc.putImageData(mid,0,0);
+  const dmC=document.createElement('canvas'); dmC.width=nW; dmC.height=nH;
+  const dmc=dmC.getContext('2d');
+  dmc.translate(nW/2,nH/2); dmc.rotate(rad); dmc.drawImage(mC,-W/2,-H/2);
+  const newMask=dmc.getImageData(0,0,nW,nH);
+  alphaMask=new Uint8Array(nW*nH);
+  for(let i=0;i<nW*nH;i++) alphaMask[i]=newMask.data[i*4];
+
+  ecv.width=nW; ecv.height=nH;
+  const gc=$('guide-canvas'); gc.width=nW; gc.height=nH;
+  rotLive=0; redrawCanvas(); resetZoom();
+}
+
+// ── Comparison slider ─────────────────────────────────────────
+let cmpPct=50,cmpDrag=false;
+function setCmp(pct){
+  cmpPct=pct;
+  $('cmp-before').style.clipPath=`inset(0 ${100-pct}% 0 0)`;
+  $('cmp-after').style.clipPath=`inset(0 0 0 ${pct}%)`;
+  $('cmp-div').style.left=pct+'%';
+  $('cmp-hnd').style.left=pct+'%';
+}
+function cmpFromEvent(e){
+  const x=e.touches?e.touches[0].clientX:e.clientX;
+  const rect=$('ed-vp').getBoundingClientRect();
+  setCmp(Math.max(0,Math.min(100,(x-rect.left)/rect.width*100)));
+}
+$('cmp-hnd').addEventListener('mousedown',e=>{cmpDrag=true;e.preventDefault();});
+$('cmp-hnd').addEventListener('touchstart',e=>{cmpDrag=true;e.preventDefault();},{passive:false});
+document.addEventListener('mousemove',e=>{if(cmpDrag)cmpFromEvent(e);});
+document.addEventListener('touchmove',e=>{if(cmpDrag)cmpFromEvent(e);},{passive:false});
+document.addEventListener('mouseup',()=>cmpDrag=false);
+document.addEventListener('touchend',()=>cmpDrag=false);
+
+// ── Pré-visualização com fundo no modo Comparar ───────────────
+function updateCmpAfter(){
+  const useBg=hasBg()&&alphaMask&&origPixels;
+  $('cmp-ai').style.display=useBg?'none':'';
+  $('cmp-cv').style.display=useBg?'block':'none';
+  if(!useBg) return;
+  const cv=buildFinalCanvas();
+  const c=$('cmp-cv');
+  c.width=cv.width; c.height=cv.height;
+  c.getContext('2d').drawImage(cv,0,0);
+  // Remove o xadrez quando há fundo real
+  $('cmp-after').style.background=bgConfig.type==='color'?bgConfig.color:'';
+}
+
+// ── Mode toggle ───────────────────────────────────────────────
+function setMode(m){
+  edMode=m;
+  $('cmp-view').classList.toggle('on',m==='compare');
+  $('edit-view').classList.toggle('on',m==='edit');
+  $('brush-bar').classList.toggle('on',m==='edit');
+  $('ed-cmp').classList.toggle('active',m==='compare');
+  $('ed-edt').classList.toggle('active',m==='edit');
+  const inEdit=m==='edit';
+  $('zoom-lbl').style.display=inEdit?'inline':'none';
+  $('ed-zoom-fit').style.display=inEdit?'flex':'none';
+  showZoomLabel();
+  if(!inEdit) $('bcursor').style.display='none';
+  else updateCursorForTool();
+  if(m==='compare') updateCmpAfter();
+}
+function updateCursorForTool(){
+  const isBrush=(brushMode==='erase'||brushMode==='restore');
+  $('bcursor').style.display=isBrush?'block':'none';
+  $('edit-canvas').style.cursor=isBrush?'none'
+    :(brushMode==='select'||brushMode==='lasso')?'crosshair':'grab';
+}
+$('ed-cmp').addEventListener('click',()=>setMode('compare'));
+$('ed-edt').addEventListener('click',()=>setMode('edit'));
+$('ed-prev').addEventListener('click',()=>{if(edIdx>0){edIdx--;loadItem();}});
+$('ed-next').addEventListener('click',()=>{if(edIdx<edList.length-1){edIdx++;loadItem();}});
+$('ed-x').addEventListener('click',()=>{$('ed-modal').classList.remove('open');$('bcursor').style.display='none';});
+$('ed-zoom-fit').addEventListener('click',resetZoom);
+$('ed-undo').addEventListener('click',doUndo);
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&edMode==='edit'){e.preventDefault();doUndo();}
+});
+
+// "Baixar Todas" — zip de todos os resultados da lista atual
+$('ed-dl-all').addEventListener('click',()=>{
+  const files=edList.filter(x=>x.result).map(x=>x.result);
+  if(files.length) dlZip(files,'resultados.zip');
+});
+
+// ── Opções de qualidade (nitidez + tamanho) ───────────────────
+let edSharpen=false;
+$('ed-sharpen').addEventListener('click',()=>{
+  edSharpen=!edSharpen;
+  $('ed-sharpen').textContent=edSharpen?'On ✓':'Off';
+  $('ed-sharpen').classList.toggle('on',edSharpen);
+});
+
+function getExportScale(){ return parseFloat($('ed-size-sel').value)||1; }
+
+// Constrói canvas final escalado (fundo + imagem) para download direto no browser
+function buildScaledCanvas(scale){
+  const src=buildFinalCanvas();
+  if(scale===1) return src;
+  const dst=document.createElement('canvas');
+  dst.width=Math.max(1,Math.round(src.width*scale));
+  dst.height=Math.max(1,Math.round(src.height*scale));
+  const dc=dst.getContext('2d');
+  dc.imageSmoothingEnabled=true; dc.imageSmoothingQuality='high';
+  dc.drawImage(src,0,0,dst.width,dst.height);
+  return dst;
+}
+
+function getUpscaleFactor(){ return parseInt($('ed-upscale').value)||0; }
+
+// "Salvar Edição" — envia ao servidor com nitidez, escala e upscale (Real-ESRGAN se disponível)
+$('ed-save').addEventListener('click',async()=>{
+  const item=edList[edIdx];
+  if(!item?.result||!ecv||!origPixels||!alphaMask) return;
+  const btn=$('ed-save');
+  const upFactor=getUpscaleFactor();
+  btn.textContent=upFactor>0?'Upscaling…':'Salvando…'; btn.disabled=true;
+  try{
+    const cv=buildFinalCanvas();
+    const dataUrl=await new Promise(r=>cv.toBlob(b=>{
+      const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(b);
+    },'image/png'));
+    const res=await fetch('/save-edit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({filename:item.result, data:dataUrl, sharpen:edSharpen, scale:getExportScale(), upscale:upFactor})
+    });
+    const json=await res.json();
+    if(json.ok){
+      const sizeInfo=json.width?` (${json.width}×${json.height}px)`:'';
+      btn.textContent='✓ Salvo!'+sizeInfo;
+      btn.style.background='#1d4ed8'; btn.style.color='#bfdbfe';
+      const thumb=document.querySelector(`.rcard .cs-a img[src*="${item.result}"]`);
+      if(thumb) thumb.src=`/result/${item.result}?t=${Date.now()}`;
+      setTimeout(()=>{btn.textContent='💾 Salvar';btn.style.background='';btn.style.color='#6ee7b7';btn.disabled=false;},2500);
+    } else {
+      throw new Error(json.error||'Erro');
+    }
+  } catch(e){
+    btn.textContent='Erro!'; btn.disabled=false;
+    setTimeout(()=>{btn.textContent='💾 Salvar';},2000);
+  }
+});
+
+// ── Download — aplica escala no browser para download imediato ─
+$('ed-dl').addEventListener('click',async()=>{
+  const item=edList[edIdx]; if(!item?.result) return;
+  const btn=$('ed-dl');
+  btn.textContent='⏳'; btn.disabled=true;
+  try{
+    const scale=getExportScale();
+    const name=item.name.replace(/\.[^.]+$/,'')+'_sem_fundo.png';
+    if(edMode==='edit'&&ecv&&origPixels&&alphaMask){
+      const cv=buildScaledCanvas(scale);
+      cv.toBlob(b=>{
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(b); a.download=name; a.click();
+      },'image/png');
+    } else {
+      const a=document.createElement('a'); a.href=`/download/${item.result}`; a.download=item.result; a.click();
+    }
+  }finally{
+    setTimeout(()=>{btn.textContent='⬇ Baixar';btn.disabled=false;},1200);
+  }
+});
+
+// ── Vetorizar → SVG ────────────────────────────────────────────
+let svgMode='embed';
+document.querySelectorAll('.svg-mode-opt').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    svgMode=btn.dataset.mode;
+    document.querySelectorAll('.svg-mode-opt').forEach(b=>b.classList.remove('active-mode'));
+    btn.classList.add('active-mode');
+    $('ed-svg').textContent = svgMode==='embed'?'〈/〉 SVG':'〈/〉 Vetor';
+    $('svg-mode-menu').style.display='none';
+  });
+});
+$('ed-svg-menu').addEventListener('click',e=>{
+  e.stopPropagation();
+  const m=$('svg-mode-menu');
+  m.style.display=m.style.display==='none'?'block':'none';
+});
+document.addEventListener('click',()=>{ $('svg-mode-menu').style.display='none'; });
+
+$('ed-svg').addEventListener('click',async()=>{
+  const item=edList[edIdx]; if(!item?.result) return;
+  const btn=$('ed-svg');
+  const orig=btn.textContent;
+  btn.textContent=svgMode==='embed'?'Gerando SVG…':'Vetorizando…'; btn.disabled=true;
+  try{
+    const cv=buildFinalCanvas();
+    const dataUrl=await new Promise(r=>cv.toBlob(b=>{
+      const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(b);
+    },'image/png'));
+    const res=await fetch('/vectorize',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({data:dataUrl, mode:svgMode})
+    });
+    if(!res.ok) throw new Error('Erro no servidor');
+    const blob=await res.blob();
+    const name=item.name.replace(/\.[^.]+$/,'')+'.svg';
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=name; a.click();
+    btn.textContent='✓ SVG!';
+    setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2000);
+  } catch(e){
+    btn.textContent='Erro!'; btn.disabled=false;
+    setTimeout(()=>{btn.textContent=orig;},2000);
+  }
+});
+
+// ── Brush tools ───────────────────────────────────────────────
+function setTool(t){
+  const prev=brushMode;
+  if(prev==='lasso'&&t!=='lasso') cancelLasso();
+  brushMode=t;
+  ['bt-e','bt-r','bt-l','bt-s','bt-g'].forEach(id=>$(id)&&$(id).classList.remove('active'));
+  const map={erase:'e',restore:'r',lasso:'l',select:'s',rotate:'g'};
+  const btn=$('bt-'+map[t]); if(btn) btn.classList.add('active');
+  $('grp-size').style.display=(t==='erase'||t==='restore')?'flex':'none';
+  $('grp-tol').style.display=t==='select'?'flex':'none';
+  $('grp-fill-action').style.display=(t==='select'||t==='lasso')?'flex':'none';
+  $('grp-lasso-mode').style.display=t==='lasso'?'flex':'none';
+  $('grp-lasso-side').style.display=t==='lasso'?'flex':'none';
+  $('fill-hint').classList.toggle('on',t==='select');
+  $('lasso-hint').classList.toggle('on',t==='lasso'&&lassoMode==='free');
+  $('lasso-poly-hint').classList.toggle('on',t==='lasso'&&lassoMode==='poly');
+  $('lasso-curve-hint').classList.toggle('on',t==='lasso'&&lassoMode==='curve');
+  $('rot-hint').classList.toggle('on',t==='rotate');
+  $('rot-deg').style.display=t==='rotate'?'inline':'none';
+  $('brush-tip').style.display=(t==='erase'||t==='restore')?'inline':'none';
+  if(edMode==='edit'){
+    updateCursorForTool();
+    if(prev!==t&&(prev==='select'||prev==='rotate'||t==='select'||t==='rotate'||prev==='lasso'))
+      redrawCanvas();
+    if(prev==='rotate'&&t!=='rotate') showGuides(false);
+    if(t!=='lasso') clearLassoOverlay();
+  }
+}
+let fillAction='remove'; // 'remove' | 'add'
+function setFillAction(a){
+  fillAction=a;
+  $('bt-fa-rm').classList.toggle('active',a==='remove');
+  $('bt-fa-ad').classList.toggle('active',a==='add');
+}
+$('bt-e').addEventListener('click',()=>setTool('erase'));
+$('bt-r').addEventListener('click',()=>setTool('restore'));
+$('bt-l').addEventListener('click',()=>setTool('lasso'));
+$('bt-s').addEventListener('click',()=>setTool('select'));
+$('bt-g').addEventListener('click',()=>setTool('rotate'));
+$('bt-fa-rm').addEventListener('click',()=>setFillAction('remove'));
+$('bt-fa-ad').addEventListener('click',()=>setFillAction('add'));
+$('bsz-sl').addEventListener('input',function(){brushSize=+this.value;$('bsz-v').textContent=this.value+'px';});
+$('ftol-sl').addEventListener('input',function(){fillLevel=+this.value;$('ftol-v').textContent=FILL_LEVELS[fillLevel].label;});
+
+// Converte coords de tela → coords do canvas (considera zoom/pan do container)
+function toCanvas(clientX,clientY){
+  if(!ecv) return null;
+  const rect=ecv.getBoundingClientRect(); // já reflete o zoom
+  if(!rect.width||!rect.height) return null;
+  const sx=ecv.width/rect.width, sy=ecv.height/rect.height;
+  return{x:(clientX-rect.left)*sx, y:(clientY-rect.top)*sy, sx, sy};
+}
+
+// ── Apagar — modifica alphaMask ───────────────────────────────
+let _brushUndoSaved=false; // salva undo só 1x por stroke
+function doErase(cx,cy,radius){
+  if(!alphaMask||!ecv) return;
+  const W=ecv.width, r=Math.ceil(radius);
+  const x0=Math.max(0,Math.floor(cx-r)), y0=Math.max(0,Math.floor(cy-r));
+  const x1=Math.min(ecv.width,Math.ceil(cx+r)+1), y1=Math.min(ecv.height,Math.ceil(cy+r)+1);
+  for(let py=y0;py<y1;py++) for(let px=x0;px<x1;px++){
+    const d=Math.hypot(px-cx,py-cy); if(d>radius) continue;
+    const t=Math.cos(d/radius*Math.PI*0.5);
+    alphaMask[py*W+px]=Math.max(0,Math.round(alphaMask[py*W+px]*(1-t)));
+  }
+  redrawRegion(x0,y0,x1,y1);
+}
+
+// ── Restaurar — modifica alphaMask (volta alpha do original) ──
+function doRestore(cx,cy,radius){
+  if(!alphaMask||!ecv) return;
+  const W=ecv.width, r=Math.ceil(radius);
+  const x0=Math.max(0,Math.floor(cx-r)), y0=Math.max(0,Math.floor(cy-r));
+  const x1=Math.min(ecv.width,Math.ceil(cx+r)+1), y1=Math.min(ecv.height,Math.ceil(cy+r)+1);
+  for(let py=y0;py<y1;py++) for(let px=x0;px<x1;px++){
+    const d=Math.hypot(px-cx,py-cy); if(d>radius) continue;
+    const t=Math.cos(d/radius*Math.PI*0.5);
+    alphaMask[py*W+px]=Math.min(255,Math.round(alphaMask[py*W+px]*(1-t)+255*t));
+  }
+  redrawRegion(x0,y0,x1,y1);
+}
+
+// ── Flood fill — seleciona região na imagem ORIGINAL inteira ──
+function doFloodFill(startX,startY){
+  if(!origPixels||!alphaMask||!ecv) return;
+  const W=ecv.width, H=ecv.height;
+  startX=Math.max(0,Math.min(W-1,startX));
+  startY=Math.max(0,Math.min(H-1,startY));
+  const si=startY*W+startX;
+  const seedR=origPixels[si*4], seedG=origPixels[si*4+1], seedB=origPixels[si*4+2];
+  pushUndo();
+  const newA=fillAction==='remove'?0:255;
+  const {tol, edgeStop}=FILL_LEVELS[fillLevel];
+
+  const visited=new Uint8Array(W*H);
+  const queue=new Int32Array(W*H);
+  let head=0,tail=0;
+  visited[si]=1; queue[tail++]=si;
+
+  while(head<tail){
+    const idx=queue[head++];
+    alphaMask[idx]=newA;
+    const px=idx%W, py=(idx/W)|0;
+    const neighbors=[px>0?idx-1:-1, px<W-1?idx+1:-1, py>0?idx-W:-1, py<H-1?idx+W:-1];
+    const pi=idx*4;
+    for(const n of neighbors){
+      if(n<0||visited[n]) continue;
+      const ni=n*4;
+
+      // Distância perceptual ao pixel semente (âncora global — evita deriva)
+      const dr_s=origPixels[ni]-seedR, dg_s=origPixels[ni+1]-seedG, db_s=origPixels[ni+2]-seedB;
+      const distSeed=Math.sqrt(0.299*dr_s*dr_s+0.587*dg_s*dg_s+0.114*db_s*db_s);
+      if(distSeed>tol) continue;
+
+      // Magnitude da borda entre pixel atual e vizinho (borda forte = para)
+      const dr_e=origPixels[ni]-origPixels[pi], dg_e=origPixels[ni+1]-origPixels[pi+1], db_e=origPixels[ni+2]-origPixels[pi+2];
+      const edgeMag=Math.sqrt(0.299*dr_e*dr_e+0.587*dg_e*dg_e+0.114*db_e*db_e);
+      if(edgeMag>edgeStop) continue;
+
+      visited[n]=1; queue[tail++]=n;
+    }
+  }
+  redrawCanvas();
+}
+
+// ── Limpeza morfológica de bordas ─────────────────────────────
+// Usa voto de maioria nos 8 vizinhos — preserva features finas (traços de 1px)
+// sem destruir conteúdo legítimo.
+// level 0=Leve  1=Médio  2=Forte
+function cleanupAlpha(level){
+  if(!alphaMask||!ecv) return;
+  pushUndo();
+  const W=ecv.width, H=ecv.height, N=W*H;
+
+  // ── Passo 1: remove clusters isolados pequenos ────────────────
+  // Thresholds menores para não desconsiderar pequenos detalhes do conteúdo
+  const minSize=[4,20,80][level];
+  {
+    const vis=new Uint8Array(N), q=new Int32Array(N);
+    for(let s=0;s<N;s++){
+      if(alphaMask[s]<128||vis[s]) continue;
+      let h=0,t=0; vis[s]=1; q[t++]=s;
+      while(h<t){
+        const idx=q[h++], x=idx%W, y=(idx/W)|0;
+        if(x>0   &&!vis[idx-1]&&alphaMask[idx-1]>=128){vis[idx-1]=1;q[t++]=idx-1;}
+        if(x<W-1 &&!vis[idx+1]&&alphaMask[idx+1]>=128){vis[idx+1]=1;q[t++]=idx+1;}
+        if(y>0   &&!vis[idx-W]&&alphaMask[idx-W]>=128){vis[idx-W]=1;q[t++]=idx-W;}
+        if(y<H-1 &&!vis[idx+W]&&alphaMask[idx+W]>=128){vis[idx+W]=1;q[t++]=idx+W;}
+      }
+      if(t<minSize) for(let i=0;i<t;i++) alphaMask[q[i]]=0;
+    }
+  }
+
+  // ── Passo 2: suavização por voto de maioria (8-vizinhos) ──────
+  // Para cada pixel de borda, conta quantos dos 8 vizinhos são opacos:
+  //   - Opaco com vizinhos opacos < keepMin → remove (saliência/ponto extra)
+  //   - Transparente com vizinhos opacos ≥ addMin → adiciona (buraco/pixel faltando)
+  // Pixels com traços finos sobrevivem pois têm vizinhos ao longo do traço.
+  const keepMin=[2,2,3][level]; // mínimo de vizinhos opacos para manter um pixel opaco
+  const addMin =[6,5,5][level]; // mínimo de vizinhos opacos para preencher um transparente
+  const iters  =[1,2,3][level];
+
+  for(let iter=0;iter<iters;iter++){
+    const next=alphaMask.slice(); // copia — leitura da versão anterior, escrita na nova
+    for(let y=1;y<H-1;y++){
+      for(let x=1;x<W-1;x++){
+        const i=y*W+x;
+        // Conta 8 vizinhos opacos
+        const cnt=
+          (alphaMask[i-W-1]>=128?1:0)+(alphaMask[i-W]>=128?1:0)+(alphaMask[i-W+1]>=128?1:0)+
+          (alphaMask[i-1]  >=128?1:0)+                           (alphaMask[i+1]  >=128?1:0)+
+          (alphaMask[i+W-1]>=128?1:0)+(alphaMask[i+W]>=128?1:0)+(alphaMask[i+W+1]>=128?1:0);
+        if(alphaMask[i]>=128){ if(cnt<keepMin) next[i]=0;   } // apara pixels a mais
+        else                 { if(cnt>=addMin) next[i]=255; } // preenche pixels a menos
+      }
+    }
+    alphaMask=next;
+  }
+
+  redrawCanvas();
+}
+
+$('bt-clean-lv').addEventListener('click',()=>cleanupAlpha(0));
+$('bt-clean-md').addEventListener('click',()=>cleanupAlpha(1));
+$('bt-clean-hv').addEventListener('click',()=>cleanupAlpha(2));
+
+// ── Rotação — ângulo do mouse relativo ao centro do canvas ────
+function mouseAngle(clientX,clientY){
+  const rect=ecv.getBoundingClientRect();
+  return Math.atan2(clientY-(rect.top+rect.height/2), clientX-(rect.left+rect.width/2))*180/Math.PI;
+}
+
+// ── Linhas guia (cruz central) durante rotação ────────────────
+function showGuides(show){
+  const gc=$('guide-canvas'); if(!gc||!ecv) return;
+  if(!show){gc.style.display='none';return;}
+  // guide-canvas fica dentro do #cv-wrap → mesmas coordenadas do edit-canvas
+  gc.width=ecv.width; gc.height=ecv.height;
+  gc.style.display='block';
+  const ctx=gc.getContext('2d');
+  ctx.clearRect(0,0,gc.width,gc.height);
+  const cx=gc.width/2, cy=gc.height/2;
+  const lw=Math.max(1,Math.round(1.5/edZoom));
+  const dash=Math.max(4,Math.round(8/edZoom));
+  ctx.strokeStyle='rgba(255,255,255,0.9)';
+  ctx.lineWidth=lw;
+  ctx.setLineDash([dash,Math.round(dash/2)]);
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(gc.width,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,gc.height); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.beginPath(); ctx.arc(cx,cy,Math.max(3,Math.round(5/edZoom)),0,Math.PI*2); ctx.fill();
+}
+
+// ── Stroke (pincel com interpolação) ─────────────────────────
+function stroke(clientX,clientY){
+  if(!brushPainting||edMode!=='edit') return;
+  const pos=toCanvas(clientX,clientY); if(!pos) return;
+  if(!_brushUndoSaved){ pushUndo(); _brushUndoSaved=true; }
+  const canvasRadius=brushSize/2*Math.max(pos.sx,pos.sy);
+  const paint=(x,y)=>brushMode==='erase'?doErase(x,y,canvasRadius):doRestore(x,y,canvasRadius);
+  if(lastPt){
+    const dx=pos.x-lastPt.x, dy=pos.y-lastPt.y, dist=Math.hypot(dx,dy);
+    const step=Math.max(canvasRadius*0.25,1);
+    if(dist>step){const steps=Math.ceil(dist/step);for(let s=1;s<=steps;s++)paint(lastPt.x+dx*s/steps,lastPt.y+dy*s/steps);}
+    else paint(pos.x,pos.y);
+  } else paint(pos.x,pos.y);
+  lastPt=pos;
+}
+
+function moveCursor(clientX,clientY){
+  const c=$('bcursor');
+  c.style.left=clientX+'px'; c.style.top=clientY+'px';
+  c.style.width=brushSize+'px'; c.style.height=brushSize+'px';
+}
+
+// ── Event handlers do editor ──────────────────────────────────
+const vp=$('ed-vp');
+
+// ── Zoom com scroll ───────────────────────────────────────────
+$('edit-view').addEventListener('wheel',e=>{
+  if(edMode!=='edit'||!ecv) return;
+  e.preventDefault();
+  const factor=e.deltaY<0?1.2:1/1.2;
+  const newZoom=Math.max(0.05,Math.min(20,edZoom*factor));
+  // Ponto fixo: manter o pixel do canvas sob o cursor
+  // Pixel canvas sob cursor: px = (mx - evLeft - panX) / zoom
+  const evRect=$('edit-view').getBoundingClientRect();
+  const mx=e.clientX-evRect.left, my=e.clientY-evRect.top;
+  // newPanX = mx - px * newZoom = mx - (mx - panX) / zoom * newZoom
+  edPanX=mx-(mx-edPanX)*newZoom/edZoom;
+  edPanY=my-(my-edPanY)*newZoom/edZoom;
+  edZoom=newZoom;
+  applyTransform(); showZoomLabel();
+},{passive:false});
+
+// ── Pan com botão do meio ─────────────────────────────────────
+vp.addEventListener('mousedown',e=>{
+  if(edMode!=='edit') return;
+  if(e.button===1){ // botão do meio
+    e.preventDefault();
+    panDragging=true; panLastX=e.clientX; panLastY=e.clientY;
+    $('edit-view').style.cursor='grabbing';
+    return;
+  }
+  if(brushMode==='select'){
+    const pos=toCanvas(e.clientX,e.clientY);
+    if(pos) doFloodFill(Math.round(pos.x),Math.round(pos.y));
+    return;
+  }
+  if(brushMode==='lasso'){
+    const pos=toCanvas(e.clientX,e.clientY); if(!pos) return;
+    if(lassoMode==='poly'||lassoMode==='curve'){
+      // Duplo-clique fecha e aplica
+      if(e.detail>=2&&lassoPoints.length>=3){ finishLasso(); return; }
+      // Clique perto do ponto inicial com ≥3 pontos → fecha
+      if(lassoPoints.length>=3){
+        const dist=Math.hypot(pos.x-lassoPoints[0].x,pos.y-lassoPoints[0].y);
+        if(dist<12/edZoom){ finishLasso(); return; }
+      }
+      // Registra modo do segmento ANTES de adicionar o novo ponto
+      if(lassoPoints.length>0) lassoSegModes.push(lassoMode);
+      lassoPoints.push({x:pos.x,y:pos.y});
+      drawLassoOverlay();
+    } else {
+      lassoPoints=[{x:pos.x,y:pos.y}]; lassoSegModes=[]; lassoActive=true;
+      drawLassoOverlay();
+    }
+    return;
+  }
+  if(brushMode==='rotate'){
+    rotDragging=true;
+    rotMouseStart=mouseAngle(e.clientX,e.clientY);
+    rotStartAngle=rotLive;
+    ecv.style.cursor='grabbing';
+    showGuides(true);
+    return;
+  }
+  brushPainting=true; lastPt=null; _brushUndoSaved=false; stroke(e.clientX,e.clientY);
+});
+
+document.addEventListener('mousemove',e=>{
+  if(edMode!=='edit') return;
+  if(panDragging){
+    edPanX+=e.clientX-panLastX; edPanY+=e.clientY-panLastY;
+    panLastX=e.clientX; panLastY=e.clientY;
+    applyTransform(); return;
+  }
+  if(rotDragging){
+    const delta=mouseAngle(e.clientX,e.clientY)-rotMouseStart;
+    rotLive=rotStartAngle+delta;
+    applyTransform(rotLive);
+    $('rot-deg').textContent=Math.round(rotLive)+'°';
+    showGuides(true);
+    return;
+  }
+  if(brushMode==='lasso'){
+    const pos=toCanvas(e.clientX,e.clientY); if(!pos) return;
+    if(lassoMode==='poly'||lassoMode==='curve'){
+      // Mostra preview live até o cursor
+      drawLassoOverlay(pos); return;
+    }
+    if(lassoActive){
+      // Modo livre: adiciona ponto se moveu ≥4px no canvas
+      const last=lassoPoints[lassoPoints.length-1];
+      if(Math.hypot(pos.x-last.x,pos.y-last.y)>4/edZoom){
+        lassoPoints.push({x:pos.x,y:pos.y});
+        drawLassoOverlay();
+      }
+    }
+    return;
+  }
+  if(brushMode==='erase'||brushMode==='restore'){
+    moveCursor(e.clientX,e.clientY);
+    stroke(e.clientX,e.clientY);
+  }
+});
+
+document.addEventListener('mouseup',e=>{
+  if(panDragging&&e.button===1){
+    panDragging=false; $('edit-view').style.cursor=''; return;
+  }
+  if(rotDragging){
+    rotDragging=false;
+    ecv.style.cursor='grab';
+    showGuides(false);
+    if(Math.abs(rotLive)>0.5) bakeRotation(rotLive);
+    return;
+  }
+  if(brushMode==='lasso'&&lassoMode==='free'&&lassoActive){
+    // Modo livre: aplica ao soltar
+    lassoActive=false; finishLasso(); return;
+  }
+  brushPainting=false; lastPt=null;
+});
+
+vp.addEventListener('mouseleave',()=>{
+  if(!rotDragging){brushPainting=false;lastPt=null;$('bcursor').style.display='none';}
+  // Laço livre: aplica ao sair (evita ficar travado)
+  if(brushMode==='lasso'&&lassoMode==='free'&&lassoActive&&lassoPoints.length>3){
+    lassoActive=false; finishLasso();
+  }
+});
+vp.addEventListener('mouseenter',()=>{
+  if(edMode==='edit'&&(brushMode==='erase'||brushMode==='restore'))$('bcursor').style.display='block';
+});
+
+// Touch
+vp.addEventListener('touchstart',e=>{
+  if(edMode!=='edit') return;
+  e.preventDefault();
+  const t=e.touches[0];
+  if(brushMode==='select'){
+    const pos=toCanvas(t.clientX,t.clientY);
+    if(pos) doFloodFill(Math.round(pos.x),Math.round(pos.y));
+    return;
+  }
+  if(brushMode==='lasso'){
+    const pos=toCanvas(t.clientX,t.clientY); if(!pos) return;
+    if(lassoMode==='poly'||lassoMode==='curve'){
+      if(lassoPoints.length>0) lassoSegModes.push(lassoMode);
+      lassoPoints.push({x:pos.x,y:pos.y}); drawLassoOverlay();
+    } else { lassoPoints=[{x:pos.x,y:pos.y}]; lassoSegModes=[]; lassoActive=true; drawLassoOverlay(); }
+    return;
+  }
+  if(brushMode==='rotate'){
+    rotDragging=true; rotMouseStart=mouseAngle(t.clientX,t.clientY); rotStartAngle=rotLive; return;
+  }
+  brushPainting=true; lastPt=null; stroke(t.clientX,t.clientY);
+},{passive:false});
+
+vp.addEventListener('touchmove',e=>{
+  if(edMode!=='edit') return;
+  e.preventDefault();
+  const t=e.touches[0];
+  if(brushMode==='lasso'&&lassoActive){
+    const pos=toCanvas(t.clientX,t.clientY); if(!pos) return;
+    const last=lassoPoints[lassoPoints.length-1];
+    if(Math.hypot(pos.x-last.x,pos.y-last.y)>4/edZoom){lassoPoints.push({x:pos.x,y:pos.y});drawLassoOverlay();}
+    return;
+  }
+  if(rotDragging){
+    const delta=mouseAngle(t.clientX,t.clientY)-rotMouseStart;
+    rotLive=rotStartAngle+delta;
+    applyTransform(rotLive);
+    $('rot-deg').textContent=Math.round(rotLive)+'°';
+    return;
+  }
+  moveCursor(t.clientX,t.clientY); stroke(t.clientX,t.clientY);
+},{passive:false});
+
+vp.addEventListener('touchend',e=>{
+  if(brushMode==='lasso'&&lassoMode==='free'&&lassoActive){
+    lassoActive=false; finishLasso(); return;
+  }
+  if(rotDragging){rotDragging=false;if(Math.abs(rotLive)>0.5)bakeRotation(rotLive);return;}
+  brushPainting=false; lastPt=null;
+});
+</script>
+</body>
+</html>
