@@ -296,6 +296,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <div class="actions">
       <button class="btn-s" id="btn-clear">Limpar</button>
       <button class="btn-p" id="btn-proc" disabled>Remover Fundos</button>
+      <button class="btn-s" id="btn-edit-direct" disabled>✏️ Editar sem Remover Fundo</button>
       <button class="btn-g" id="btn-zip" style="display:none">Baixar Todos (.zip)</button>
     </div>
     <div class="res-section" id="img-res" style="display:none">
@@ -643,6 +644,7 @@ function renderQ(){
     fileQ.splice(+b.dataset.i,1); renderQ();
   }));
   $('btn-proc').disabled=fileQ.length===0;
+  $('btn-edit-direct').disabled=fileQ.length===0;
 }
 $('btn-clear').addEventListener('click',()=>{fileQ=[];edItems=[];renderQ();$('res-grid').innerHTML='';$('img-res').style.display='none';$('btn-zip').style.display='none';});
 
@@ -669,6 +671,33 @@ $('btn-proc').addEventListener('click',async()=>{
   if(edItems.filter(x=>x.result).length>1)$('btn-zip').style.display='inline-block';
 });
 $('btn-zip').addEventListener('click',()=>dlZip(edItems.filter(x=>x.result).map(x=>x.result),'imagens_sem_fundo.zip'));
+
+// ── Editar direto (sem remover fundo) ──────────────────────────
+$('btn-edit-direct').addEventListener('click',async()=>{
+  if(!fileQ.length)return;
+  const startIdx=edItems.length;
+  $('img-res').style.display='block';
+  $('btn-proc').disabled=true;$('btn-edit-direct').disabled=true;
+  for(let i=0;i<fileQ.length;i+=4){
+    const batch=fileQ.slice(i,i+4);
+    showP('Preparando para editar…',`${Math.min(i+4,fileQ.length)} de ${fileQ.length}`);
+    const form=new FormData();
+    batch.forEach(f=>form.append('files',f));
+    form.append('mode','none');
+    try{
+      const resp=await fetch('/remove',{method:'POST',body:form});
+      if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error(`Servidor retornou ${resp.status}${t?': '+t.slice(0,120):''}`);}
+      const data=await resp.json();
+      data.results.forEach(r=>{const idx=edItems.length;edItems.push(r);addCard(r,idx,$('res-grid'));});
+    }catch(e){
+      const msg=e instanceof TypeError?'Servidor não encontrado — execute o RemoveCerto':(e.message||'Erro desconhecido');
+      batch.forEach(f=>{edItems.push({name:f.name,error:msg});addCard({name:f.name,error:msg},edItems.length-1,$('res-grid'));});
+    }
+  }
+  hideP();$('btn-proc').disabled=false;$('btn-edit-direct').disabled=false;
+  if(edItems.filter(x=>x.result).length>1)$('btn-zip').style.display='inline-block';
+  if(edItems[startIdx]&&edItems[startIdx].result) openEditor(edItems,startIdx);
+});
 
 function addCard(r,idx,grid){
   const c=document.createElement('div');c.className='rcard'+(r.error?' error':'');

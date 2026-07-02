@@ -286,6 +286,9 @@ def remove_background():
 
             if mode == "white":
                 output_image = remove_white_bg(input_image, tolerance=tolerance)
+            elif mode == "none":
+                # Edição direta: sem remoção de fundo, só prepara os arquivos p/ o editor
+                output_image = input_image
             else:
                 output_image = remove_ai(input_image)
 
