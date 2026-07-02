@@ -1221,8 +1221,9 @@ function loadItem(){
 
   ecv=$('edit-canvas'); ectx=ecv.getContext('2d');
 
-  // 1) Carrega resultado da IA → extrai alphaMask em canvas temporário
-  //    (NÃO desenha no canvas principal para não mostrar o fundo removido antes do original)
+  // Carrega o resultado atual (já reflete qualquer edição salva antes — cor e
+  // transparência vêm da MESMA imagem, senão um Salvar anterior de Pincel/Balde/
+  // Corte seria perdido ao reabrir, já que a cor "original" nunca muda de arquivo)
   const ri=new Image(); ri.crossOrigin='anonymous';
   ri.onload=()=>{
     const tmpR=document.createElement('canvas');
@@ -1233,29 +1234,14 @@ function loadItem(){
     const N=tmpR.width*tmpR.height;
     alphaMask=new Uint8Array(N);
     for(let i=0;i<N;i++) alphaMask[i]=rd.data[i*4+3];
+    origPixels=new Uint8ClampedArray(rd.data);
 
     ecv.width=tmpR.width; ecv.height=tmpR.height;
-
-    // 2) Carrega original → origPixels (base para restore e flood fill)
-    const oi=new Image();
-    oi.onload=()=>{
-      const tmp=document.createElement('canvas');
-      tmp.width=ecv.width; tmp.height=ecv.height;
-      const tc=tmp.getContext('2d');
-      tc.drawImage(oi,0,0,ecv.width,ecv.height);
-      origPixels=new Uint8ClampedArray(tc.getImageData(0,0,ecv.width,ecv.height).data);
-      setTool('select'); setFillAction('remove');
-      redrawCanvas();
-      resetZoom();
-    };
-    oi.onerror=()=>{
-      // Fallback: usa pixels do resultado da IA como base
-      origPixels=new Uint8ClampedArray(rd.data);
-      setTool('select'); setFillAction('remove');
-      redrawCanvas(); resetZoom();
-    };
-    oi.src=`/original/${item.original}?t=${Date.now()}`;
+    setTool('select'); setFillAction('remove');
+    redrawCanvas();
+    resetZoom();
   };
+  ri.src=`/result/${item.result}?t=${Date.now()}`;
   ri.src=`/result/${item.result}?t=${Date.now()}`;
 }
 
