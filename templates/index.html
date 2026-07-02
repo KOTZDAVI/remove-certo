@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Remove Certo</title>
+<link rel="icon" type="image/png" href="/logo">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -191,6 +192,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .btool.g.active{background:#1e3a5f;border-color:#2563eb;color:#93c5fd}
 .btool.fs.active{background:#7f1d1d;border-color:#ef4444;color:#fca5a5}
 .btool.fs:not(.active){background:var(--s2);color:var(--muted)}
+.btool.cr.active{background:#14532d;border-color:#15803d;color:#86efac}
+.btool.bk.active{background:#7c2d12;border-color:#ea580c;color:#fed7aa}
+.btool.dw.active{background:#831843;border-color:#be185d;color:#fbcfe8}
 #bt-fa-ad.active{background:#064e3b;border-color:#10b981;color:#6ee7b7}
 #bsz-sl,#ftol-sl{width:100px;accent-color:var(--accent)}
 .tip-edit{font-size:.72rem;color:var(--muted);margin-left:auto}
@@ -243,8 +247,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
 </head>
 <body>
 <div class="wrap">
-  <h1>Remove Certo</h1>
-  <p class="sub">Processamento local — suas imagens não saem do computador</p>
+  <div style="text-align:center;margin-bottom:20px">
+    <img src="/logo" alt="Remove Certo" style="height:110px;width:auto;object-fit:contain">
+    <p class="sub" style="margin-top:6px">Processamento local — suas imagens não saem do computador</p>
+  </div>
 
   <div class="tabs">
     <button class="tab active" data-tab="images">Remover Fundo</button>
@@ -465,12 +471,15 @@ button:disabled{opacity:.4;cursor:not-allowed}
   </div>
 
   <div class="brush-bar" id="brush-bar">
-    <div class="bgrp">
+    <div class="bgrp" style="flex-wrap:wrap">
       <button class="btool active" id="bt-e">✂ Apagar</button>
       <button class="btool r"      id="bt-r">↺ Restaurar</button>
+      <button class="btool dw"     id="bt-draw">🖊 Pincel</button>
       <button class="btool l"      id="bt-l">⬟ Laço</button>
       <button class="btool s"      id="bt-s">⬡ Selecionar</button>
       <button class="btool g"      id="bt-g">⟳ Girar</button>
+      <button class="btool cr"     id="bt-crop">⬜ Cortar</button>
+      <button class="btool bk"     id="bt-bucket">🪣 Balde</button>
     </div>
     <div class="bgrp" id="grp-size">
       <span>Tamanho</span>
@@ -481,6 +490,14 @@ button:disabled{opacity:.4;cursor:not-allowed}
       <span>Tolerância</span>
       <input type="range" id="ftol-sl" min="0" max="2" step="1" value="1"/>
       <span id="ftol-v" style="font-size:.78rem;min-width:40px;color:var(--text)">Média</span>
+    </div>
+    <div class="bgrp" id="grp-bucket-color" style="display:none">
+      <span>Cor</span>
+      <input type="color" id="bucket-color" value="#ff0000" style="width:34px;height:28px;padding:0;border:none;cursor:pointer;border-radius:5px"/>
+    </div>
+    <div class="bgrp" id="grp-draw-color" style="display:none">
+      <span>Cor</span>
+      <input type="color" id="draw-color" value="#ff0000" style="width:34px;height:28px;padding:0;border:none;cursor:pointer;border-radius:5px"/>
     </div>
     <div class="bgrp" id="grp-fill-action" style="display:none">
       <button class="btool fs active" id="bt-fa-rm">− Remover</button>
@@ -497,11 +514,14 @@ button:disabled{opacity:.4;cursor:not-allowed}
       <button class="btool"        id="bt-ls-out" title="A ação afeta o que está FORA do traço">Exterior</button>
     </div>
     <span class="fill-hint" id="fill-hint">Clique numa região para selecionar</span>
+    <span class="fill-hint" id="bucket-hint">Clique numa região para pintar com a cor escolhida</span>
     <span class="fill-hint" id="lasso-hint">Arraste para traçar livremente · Solte para aplicar</span>
     <span class="fill-hint" id="lasso-poly-hint">Clique para adicionar pontos · Duplo-clique ou Enter para fechar</span>
     <span class="fill-hint" id="lasso-curve-hint">Clique para adicionar curvas · Duplo-clique ou Enter para fechar</span>
     <span class="fill-hint" id="rot-hint">Clique e arraste para girar · Solte para aplicar</span>
     <span id="rot-deg" style="font-size:.76rem;color:#fde68a;display:none">0°</span>
+    <span class="fill-hint" id="crop-hint">Arraste para definir a área · Enter para aplicar · Esc para cancelar</span>
+    <button id="bt-crop-apply" style="display:none;padding:7px 14px;border-radius:7px;font-size:.78rem;font-weight:600;border:1px solid #15803d;background:#14532d;color:#86efac;cursor:pointer">✓ Aplicar Corte</button>
     <span class="tip-edit" id="brush-tip">Apagar remove · Restaurar devolve o original</span>
     <div class="bgrp bgrp-sep">
       <button class="btool s" id="bt-clean-lv" title="1 passada: apara pixels a mais e preenche pixels a menos (1px)">🧹 Leve</button>
@@ -532,6 +552,26 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <script>
 // ── utils ────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
+
+// ── Detecta abertura direta via file:// (sem servidor) ───────────
+if(location.protocol==='file:'){
+  document.body.insertAdjacentHTML('afterbegin',
+    '<div style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;'+
+    'align-items:center;justify-content:center;padding:24px">'+
+    '<div style="background:#1a1a28;border:2px solid #ef4444;border-radius:16px;max-width:480px;'+
+    'width:100%;padding:32px 28px;text-align:center">'+
+    '<div style="font-size:2.2rem;margin-bottom:12px">⚠️</div>'+
+    '<h2 style="color:#f87171;margin-bottom:12px;font-size:1.2rem">Arquivo aberto diretamente</h2>'+
+    '<p style="color:#9ca3af;font-size:.9rem;line-height:1.6;margin-bottom:20px">'+
+    'O <strong style="color:#e8e8f0">Remove Certo</strong> precisa do servidor para funcionar.<br>'+
+    'Abra o atalho do programa ou execute <code style="background:#111;padding:2px 7px;border-radius:4px;'+
+    'color:#a78bfa;font-size:.85rem">iniciar.sh</code> e acesse<br>'+
+    '<a href="http://localhost:5050" style="color:#60a5fa">http://localhost:5050</a></p>'+
+    '<button onclick="window.location.href=\'http://localhost:5050\'" '+
+    'style="background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;border:none;'+
+    'border-radius:8px;padding:10px 28px;font-size:.9rem;font-weight:600;cursor:pointer">'+
+    'Abrir corretamente</button></div></div>');
+}
 
 // ── verifica atualização disponível (polling leve) ────────────────
 (function checkUpdate(){
@@ -616,9 +656,14 @@ $('btn-proc').addEventListener('click',async()=>{
     batch.forEach(f=>form.append('files',f));
     form.append('mode',selMode);form.append('tolerance',$('img-tol').value);
     try{
-      const data=await fetch('/remove',{method:'POST',body:form}).then(r=>r.json());
+      const resp=await fetch('/remove',{method:'POST',body:form});
+      if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error(`Servidor retornou ${resp.status}${t?': '+t.slice(0,120):''}`);}
+      const data=await resp.json();
       data.results.forEach(r=>{const idx=edItems.length;edItems.push(r);addCard(r,idx,$('res-grid'));});
-    }catch{batch.forEach(f=>{edItems.push({name:f.name,error:'Erro'});addCard({name:f.name,error:'Erro'},edItems.length-1,$('res-grid'));});}
+    }catch(e){
+      const msg=e instanceof TypeError?'Servidor não encontrado — execute o RemoveCerto':(e.message||'Erro desconhecido');
+      batch.forEach(f=>{edItems.push({name:f.name,error:msg});addCard({name:f.name,error:msg},edItems.length-1,$('res-grid'));});
+    }
   }
   hideP();$('btn-proc').disabled=false;
   if(edItems.filter(x=>x.result).length>1)$('btn-zip').style.display='inline-block';
@@ -952,11 +997,22 @@ function buildLassoPath(ctx, pts, segModes, live, liveMode){
   }
 }
 
-// Enter fecha polígono/curva; Escape cancela
+// Enter/Escape/Ctrl+Z no corte e no laço
 document.addEventListener('keydown',e=>{
+  if(brushMode==='crop'){
+    if(e.key==='Enter'&&cropRect){e.preventDefault();applyCrop();}
+    if(e.key==='Escape'){e.preventDefault();cancelCrop();}
+    return;
+  }
   if(brushMode!=='lasso') return;
   if(e.key==='Enter'&&lassoMode!=='free'&&lassoPoints.length>=3){e.preventDefault();finishLasso();}
   if(e.key==='Escape'){e.preventDefault();cancelLasso();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&lassoMode!=='free'&&lassoPoints.length>0){
+    e.preventDefault(); e.stopImmediatePropagation();
+    lassoPoints.pop();
+    if(lassoSegModes.length>0) lassoSegModes.pop();
+    if(lassoPoints.length===0){ clearLassoOverlay(); } else { drawLassoOverlay(); }
+  }
 });
 
 function drawLassoOverlay(mousePos){
@@ -1077,16 +1133,34 @@ const undoStack=[];
 const UNDO_MAX=30;
 function pushUndo(){
   if(!alphaMask) return;
-  undoStack.push(alphaMask.slice()); // copia
+  undoStack.push(alphaMask.slice());
+  if(undoStack.length>UNDO_MAX) undoStack.shift();
+  $('ed-undo').style.display='flex';
+}
+// Salva estado completo (alphaMask + origPixels + dimensões) — usado pelo corte
+function pushUndoFull(){
+  if(!alphaMask||!origPixels||!ecv) return;
+  undoStack.push({mask:alphaMask.slice(), px:new Uint8ClampedArray(origPixels), w:ecv.width, h:ecv.height});
   if(undoStack.length>UNDO_MAX) undoStack.shift();
   $('ed-undo').style.display='flex';
 }
 function doUndo(){
-  if(!undoStack.length||!alphaMask) return;
-  alphaMask=undoStack.pop();
+  if(!undoStack.length) return;
+  const entry=undoStack.pop();
+  if(entry instanceof Uint8Array){
+    alphaMask=entry;
+  } else {
+    alphaMask=entry.mask; origPixels=entry.px;
+    ecv.width=entry.w; ecv.height=entry.h;
+    const gc=$('guide-canvas'); if(gc){gc.width=entry.w; gc.height=entry.h;}
+    resetZoom();
+  }
   if(!undoStack.length) $('ed-undo').style.display='none';
   redrawCanvas();
 }
+
+// ── Corte ─────────────────────────────────────────────────────
+let cropRect=null, cropDragging=false, cropStart=null;
 
 // ── Rotação ───────────────────────────────────────────────────
 let rotDragging=false,rotStartAngle=0,rotMouseStart=0,rotLive=0;
@@ -1332,10 +1406,10 @@ function setMode(m){
   if(m==='compare') updateCmpAfter();
 }
 function updateCursorForTool(){
-  const isBrush=(brushMode==='erase'||brushMode==='restore');
+  const isBrush=(brushMode==='erase'||brushMode==='restore'||brushMode==='draw');
   $('bcursor').style.display=isBrush?'block':'none';
   $('edit-canvas').style.cursor=isBrush?'none'
-    :(brushMode==='select'||brushMode==='lasso')?'crosshair':'grab';
+    :(brushMode==='select'||brushMode==='lasso'||brushMode==='crop'||brushMode==='bucket')?'crosshair':'grab';
 }
 $('ed-cmp').addEventListener('click',()=>setMode('compare'));
 $('ed-edt').addEventListener('click',()=>setMode('edit'));
@@ -1485,22 +1559,28 @@ $('ed-svg').addEventListener('click',async()=>{
 function setTool(t){
   const prev=brushMode;
   if(prev==='lasso'&&t!=='lasso') cancelLasso();
+  if(prev==='crop'&&t!=='crop') cancelCrop();
   brushMode=t;
-  ['bt-e','bt-r','bt-l','bt-s','bt-g'].forEach(id=>$(id)&&$(id).classList.remove('active'));
-  const map={erase:'e',restore:'r',lasso:'l',select:'s',rotate:'g'};
+  ['bt-e','bt-r','bt-draw','bt-l','bt-s','bt-g','bt-crop','bt-bucket'].forEach(id=>$(id)&&$(id).classList.remove('active'));
+  const map={erase:'e',restore:'r',draw:'draw',lasso:'l',select:'s',rotate:'g',crop:'crop',bucket:'bucket'};
   const btn=$('bt-'+map[t]); if(btn) btn.classList.add('active');
-  $('grp-size').style.display=(t==='erase'||t==='restore')?'flex':'none';
-  $('grp-tol').style.display=t==='select'?'flex':'none';
+  $('grp-size').style.display=(t==='erase'||t==='restore'||t==='draw')?'flex':'none';
+  $('grp-tol').style.display=(t==='select'||t==='bucket')?'flex':'none';
   $('grp-fill-action').style.display=(t==='select'||t==='lasso')?'flex':'none';
+  $('grp-bucket-color').style.display=t==='bucket'?'flex':'none';
+  $('grp-draw-color').style.display=t==='draw'?'flex':'none';
   $('grp-lasso-mode').style.display=t==='lasso'?'flex':'none';
   $('grp-lasso-side').style.display=t==='lasso'?'flex':'none';
   $('fill-hint').classList.toggle('on',t==='select');
+  $('bucket-hint').classList.toggle('on',t==='bucket');
   $('lasso-hint').classList.toggle('on',t==='lasso'&&lassoMode==='free');
   $('lasso-poly-hint').classList.toggle('on',t==='lasso'&&lassoMode==='poly');
   $('lasso-curve-hint').classList.toggle('on',t==='lasso'&&lassoMode==='curve');
   $('rot-hint').classList.toggle('on',t==='rotate');
   $('rot-deg').style.display=t==='rotate'?'inline':'none';
-  $('brush-tip').style.display=(t==='erase'||t==='restore')?'inline':'none';
+  $('crop-hint').classList.toggle('on',t==='crop');
+  $('brush-tip').style.display=(t==='erase'||t==='restore'||t==='draw')?'inline':'none';
+  $('brush-tip').textContent=t==='draw'?'Pincel pinta com a cor escolhida — arraste para desenhar ou circular':'Apagar remove · Restaurar devolve o original';
   if(edMode==='edit'){
     updateCursorForTool();
     if(prev!==t&&(prev==='select'||prev==='rotate'||t==='select'||t==='rotate'||prev==='lasso'))
@@ -1517,9 +1597,21 @@ function setFillAction(a){
 }
 $('bt-e').addEventListener('click',()=>setTool('erase'));
 $('bt-r').addEventListener('click',()=>setTool('restore'));
+$('bt-draw').addEventListener('click',()=>setTool('draw'));
 $('bt-l').addEventListener('click',()=>setTool('lasso'));
 $('bt-s').addEventListener('click',()=>setTool('select'));
 $('bt-g').addEventListener('click',()=>setTool('rotate'));
+$('bt-crop').addEventListener('click',()=>setTool('crop'));
+$('bt-bucket').addEventListener('click',()=>setTool('bucket'));
+$('bt-crop-apply').addEventListener('click',applyCrop);
+let bucketColor=hexToRgb($('bucket-color').value);
+let drawColor=hexToRgb($('draw-color').value);
+function hexToRgb(hex){
+  const v=parseInt(hex.slice(1),16);
+  return [(v>>16)&255,(v>>8)&255,v&255];
+}
+$('bucket-color').addEventListener('input',function(){bucketColor=hexToRgb(this.value);});
+$('draw-color').addEventListener('input',function(){drawColor=hexToRgb(this.value);});
 $('bt-fa-rm').addEventListener('click',()=>setFillAction('remove'));
 $('bt-fa-ad').addEventListener('click',()=>setFillAction('add'));
 $('bsz-sl').addEventListener('input',function(){brushSize=+this.value;$('bsz-v').textContent=this.value+'px';});
@@ -1563,6 +1655,27 @@ function doRestore(cx,cy,radius){
   redrawRegion(x0,y0,x1,y1);
 }
 
+// ── Pincel — pinta com cor sólida (traço livre ou círculos) ───
+// Ao contrário de Apagar/Restaurar, modifica origPixels (cor) além do
+// alphaMask (torna opaco onde pintar, mesmo em área já apagada).
+function doDraw(cx,cy,radius){
+  if(!origPixels||!alphaMask||!ecv) return;
+  const W=ecv.width, r=Math.ceil(radius);
+  const x0=Math.max(0,Math.floor(cx-r)), y0=Math.max(0,Math.floor(cy-r));
+  const x1=Math.min(ecv.width,Math.ceil(cx+r)+1), y1=Math.min(ecv.height,Math.ceil(cy+r)+1);
+  const [dr,dg,db]=drawColor;
+  for(let py=y0;py<y1;py++) for(let px=x0;px<x1;px++){
+    const d=Math.hypot(px-cx,py-cy); if(d>radius) continue;
+    const idx=py*W+px, pi=idx*4;
+    const t=d>radius-1.2?Math.max(0,(radius-d)/1.2):1; // borda suave de ~1.2px
+    origPixels[pi]  =Math.round(origPixels[pi]  *(1-t)+dr*t);
+    origPixels[pi+1]=Math.round(origPixels[pi+1]*(1-t)+dg*t);
+    origPixels[pi+2]=Math.round(origPixels[pi+2]*(1-t)+db*t);
+    alphaMask[idx]=Math.max(alphaMask[idx],Math.round(255*t));
+  }
+  redrawRegion(x0,y0,x1,y1);
+}
+
 // ── Flood fill — seleciona região na imagem ORIGINAL inteira ──
 function doFloodFill(startX,startY){
   if(!origPixels||!alphaMask||!ecv) return;
@@ -1602,6 +1715,55 @@ function doFloodFill(startX,startY){
 
       visited[n]=1; queue[tail++]=n;
     }
+  }
+  redrawCanvas();
+}
+
+// ── Balde de tinta — pinta a cor (RGB) da região na imagem original ──
+// Mesmo critério de vizinhança do doFloodFill, mas a cor só é aplicada
+// DEPOIS de fechada a busca (a busca compara contra origPixels intocado;
+// se pintássemos durante o BFS, a comparação de borda ficaria errada).
+function doPaintBucket(startX,startY){
+  if(!origPixels||!alphaMask||!ecv) return;
+  const W=ecv.width, H=ecv.height;
+  startX=Math.max(0,Math.min(W-1,startX));
+  startY=Math.max(0,Math.min(H-1,startY));
+  const si=startY*W+startX;
+  if(alphaMask[si]<10) return; // não pinta fora da imagem (fundo removido)
+  const seedR=origPixels[si*4], seedG=origPixels[si*4+1], seedB=origPixels[si*4+2];
+  const {tol, edgeStop}=FILL_LEVELS[fillLevel];
+
+  const visited=new Uint8Array(W*H);
+  const queue=new Int32Array(W*H);
+  let head=0,tail=0;
+  visited[si]=1; queue[tail++]=si;
+
+  while(head<tail){
+    const idx=queue[head++];
+    const px=idx%W, py=(idx/W)|0;
+    const pi=idx*4;
+    const neighbors=[px>0?idx-1:-1, px<W-1?idx+1:-1, py>0?idx-W:-1, py<H-1?idx+W:-1];
+    for(const n of neighbors){
+      if(n<0||visited[n]||alphaMask[n]<10) continue;
+      const ni=n*4;
+
+      const dr_s=origPixels[ni]-seedR, dg_s=origPixels[ni+1]-seedG, db_s=origPixels[ni+2]-seedB;
+      const distSeed=Math.sqrt(0.299*dr_s*dr_s+0.587*dg_s*dg_s+0.114*db_s*db_s);
+      if(distSeed>tol) continue;
+
+      const dr_e=origPixels[ni]-origPixels[pi], dg_e=origPixels[ni+1]-origPixels[pi+1], db_e=origPixels[ni+2]-origPixels[pi+2];
+      const edgeMag=Math.sqrt(0.299*dr_e*dr_e+0.587*dg_e*dg_e+0.114*db_e*db_e);
+      if(edgeMag>edgeStop) continue;
+
+      visited[n]=1; queue[tail++]=n;
+    }
+  }
+
+  pushUndoFull();
+  const [nr,ng,nb]=bucketColor;
+  for(let i=0;i<tail;i++){
+    const pi=queue[i]*4;
+    origPixels[pi]=nr; origPixels[pi+1]=ng; origPixels[pi+2]=nb;
   }
   redrawCanvas();
 }
@@ -1695,13 +1857,71 @@ function showGuides(show){
   ctx.beginPath(); ctx.arc(cx,cy,Math.max(3,Math.round(5/edZoom)),0,Math.PI*2); ctx.fill();
 }
 
+// ── Corte: overlay + aplicação ───────────────────────────────
+function drawCropOverlay(){
+  const gc=$('guide-canvas'); if(!gc||!ecv) return;
+  gc.width=ecv.width; gc.height=ecv.height; gc.style.display='block';
+  const ctx=gc.getContext('2d');
+  ctx.clearRect(0,0,gc.width,gc.height);
+  if(!cropRect) return;
+  const x0=Math.min(cropRect.x1,cropRect.x2), y0=Math.min(cropRect.y1,cropRect.y2);
+  const x1=Math.max(cropRect.x1,cropRect.x2), y1=Math.max(cropRect.y1,cropRect.y2);
+  const W=gc.width, H=gc.height;
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.fillRect(0,0,W,y0); ctx.fillRect(0,y0,x0,y1-y0);
+  ctx.fillRect(x1,y0,W-x1,y1-y0); ctx.fillRect(0,y1,W,H-y1);
+  const lw=Math.max(1,1.5/edZoom), ds=Math.max(4,6/edZoom);
+  ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=lw;
+  ctx.setLineDash([ds,ds/2]);
+  ctx.strokeRect(x0,y0,x1-x0,y1-y0); ctx.setLineDash([]);
+  const hw=Math.max(4,8/edZoom);
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  [[x0,y0],[x1,y0],[x0,y1],[x1,y1]].forEach(([hx,hy])=>ctx.fillRect(hx-hw/2,hy-hw/2,hw,hw));
+  const fs=Math.max(10,13/edZoom);
+  ctx.font=`bold ${fs}px system-ui,sans-serif`;
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.textAlign='center';
+  ctx.fillText(`${Math.round(x1-x0)}×${Math.round(y1-y0)}`,(x0+x1)/2,Math.max(y0-5/edZoom,fs+2/edZoom));
+}
+
+function cancelCrop(){
+  cropRect=null; cropDragging=false; cropStart=null;
+  $('bt-crop-apply').style.display='none';
+  clearLassoOverlay();
+}
+
+function applyCrop(){
+  if(!cropRect||!origPixels||!alphaMask||!ecv) return;
+  const W=ecv.width, H=ecv.height;
+  const x0=Math.max(0,Math.round(Math.min(cropRect.x1,cropRect.x2)));
+  const y0=Math.max(0,Math.round(Math.min(cropRect.y1,cropRect.y2)));
+  const x1=Math.min(W,Math.round(Math.max(cropRect.x1,cropRect.x2)));
+  const y1=Math.min(H,Math.round(Math.max(cropRect.y1,cropRect.y2)));
+  const nW=x1-x0, nH=y1-y0;
+  if(nW<4||nH<4){ cancelCrop(); return; }
+  pushUndoFull();
+  const newOrig=new Uint8ClampedArray(nW*nH*4);
+  for(let y=0;y<nH;y++) for(let x=0;x<nW;x++){
+    const si=((y0+y)*W+(x0+x))*4, di=(y*nW+x)*4;
+    newOrig[di]=origPixels[si]; newOrig[di+1]=origPixels[si+1];
+    newOrig[di+2]=origPixels[si+2]; newOrig[di+3]=origPixels[si+3];
+  }
+  const newMask=new Uint8Array(nW*nH);
+  for(let y=0;y<nH;y++) for(let x=0;x<nW;x++)
+    newMask[y*nW+x]=alphaMask[(y0+y)*W+(x0+x)];
+  origPixels=newOrig; alphaMask=newMask;
+  ecv.width=nW; ecv.height=nH;
+  const gc=$('guide-canvas'); if(gc){gc.width=nW; gc.height=nH;}
+  cropRect=null; $('bt-crop-apply').style.display='none';
+  redrawCanvas(); resetZoom();
+}
+
 // ── Stroke (pincel com interpolação) ─────────────────────────
 function stroke(clientX,clientY){
   if(!brushPainting||edMode!=='edit') return;
   const pos=toCanvas(clientX,clientY); if(!pos) return;
-  if(!_brushUndoSaved){ pushUndo(); _brushUndoSaved=true; }
+  if(!_brushUndoSaved){ (brushMode==='draw'?pushUndoFull():pushUndo()); _brushUndoSaved=true; }
   const canvasRadius=brushSize/2*Math.max(pos.sx,pos.sy);
-  const paint=(x,y)=>brushMode==='erase'?doErase(x,y,canvasRadius):doRestore(x,y,canvasRadius);
+  const paint=(x,y)=>brushMode==='erase'?doErase(x,y,canvasRadius):brushMode==='restore'?doRestore(x,y,canvasRadius):doDraw(x,y,canvasRadius);
   if(lastPt){
     const dx=pos.x-lastPt.x, dy=pos.y-lastPt.y, dist=Math.hypot(dx,dy);
     const step=Math.max(canvasRadius*0.25,1);
@@ -1751,6 +1971,11 @@ vp.addEventListener('mousedown',e=>{
     if(pos) doFloodFill(Math.round(pos.x),Math.round(pos.y));
     return;
   }
+  if(brushMode==='bucket'){
+    const pos=toCanvas(e.clientX,e.clientY);
+    if(pos) doPaintBucket(Math.round(pos.x),Math.round(pos.y));
+    return;
+  }
   if(brushMode==='lasso'){
     const pos=toCanvas(e.clientX,e.clientY); if(!pos) return;
     if(lassoMode==='poly'||lassoMode==='curve'){
@@ -1777,6 +2002,14 @@ vp.addEventListener('mousedown',e=>{
     rotStartAngle=rotLive;
     ecv.style.cursor='grabbing';
     showGuides(true);
+    return;
+  }
+  if(brushMode==='crop'){
+    const pos=toCanvas(e.clientX,e.clientY); if(!pos) return;
+    cropStart={x:pos.x,y:pos.y};
+    cropRect={x1:pos.x,y1:pos.y,x2:pos.x,y2:pos.y};
+    cropDragging=true;
+    $('bt-crop-apply').style.display='none';
     return;
   }
   brushPainting=true; lastPt=null; _brushUndoSaved=false; stroke(e.clientX,e.clientY);
@@ -1813,7 +2046,15 @@ document.addEventListener('mousemove',e=>{
     }
     return;
   }
-  if(brushMode==='erase'||brushMode==='restore'){
+  if(brushMode==='crop'){
+    if(cropDragging&&cropStart){
+      const pos=toCanvas(e.clientX,e.clientY); if(!pos) return;
+      cropRect={x1:cropStart.x,y1:cropStart.y,x2:pos.x,y2:pos.y};
+      drawCropOverlay();
+    }
+    return;
+  }
+  if(brushMode==='erase'||brushMode==='restore'||brushMode==='draw'){
     moveCursor(e.clientX,e.clientY);
     stroke(e.clientX,e.clientY);
   }
@@ -1828,6 +2069,14 @@ document.addEventListener('mouseup',e=>{
     ecv.style.cursor='grab';
     showGuides(false);
     if(Math.abs(rotLive)>0.5) bakeRotation(rotLive);
+    return;
+  }
+  if(brushMode==='crop'&&cropDragging){
+    cropDragging=false;
+    if(cropRect){
+      const w=Math.abs(cropRect.x2-cropRect.x1), h=Math.abs(cropRect.y2-cropRect.y1);
+      if(w<4||h<4){ cancelCrop(); } else { drawCropOverlay(); $('bt-crop-apply').style.display='inline-block'; }
+    }
     return;
   }
   if(brushMode==='lasso'&&lassoMode==='free'&&lassoActive){
@@ -1845,7 +2094,7 @@ vp.addEventListener('mouseleave',()=>{
   }
 });
 vp.addEventListener('mouseenter',()=>{
-  if(edMode==='edit'&&(brushMode==='erase'||brushMode==='restore'))$('bcursor').style.display='block';
+  if(edMode==='edit'&&(brushMode==='erase'||brushMode==='restore'||brushMode==='draw'))$('bcursor').style.display='block';
 });
 
 // Touch
@@ -1856,6 +2105,11 @@ vp.addEventListener('touchstart',e=>{
   if(brushMode==='select'){
     const pos=toCanvas(t.clientX,t.clientY);
     if(pos) doFloodFill(Math.round(pos.x),Math.round(pos.y));
+    return;
+  }
+  if(brushMode==='bucket'){
+    const pos=toCanvas(t.clientX,t.clientY);
+    if(pos) doPaintBucket(Math.round(pos.x),Math.round(pos.y));
     return;
   }
   if(brushMode==='lasso'){
@@ -1869,6 +2123,12 @@ vp.addEventListener('touchstart',e=>{
   if(brushMode==='rotate'){
     rotDragging=true; rotMouseStart=mouseAngle(t.clientX,t.clientY); rotStartAngle=rotLive; return;
   }
+  if(brushMode==='crop'){
+    const pos=toCanvas(t.clientX,t.clientY); if(!pos) return;
+    cropStart={x:pos.x,y:pos.y};
+    cropRect={x1:pos.x,y1:pos.y,x2:pos.x,y2:pos.y};
+    cropDragging=true; $('bt-crop-apply').style.display='none'; return;
+  }
   brushPainting=true; lastPt=null; stroke(t.clientX,t.clientY);
 },{passive:false});
 
@@ -1876,6 +2136,11 @@ vp.addEventListener('touchmove',e=>{
   if(edMode!=='edit') return;
   e.preventDefault();
   const t=e.touches[0];
+  if(brushMode==='crop'&&cropDragging&&cropStart){
+    const pos=toCanvas(t.clientX,t.clientY); if(!pos) return;
+    cropRect={x1:cropStart.x,y1:cropStart.y,x2:pos.x,y2:pos.y};
+    drawCropOverlay(); return;
+  }
   if(brushMode==='lasso'&&lassoActive){
     const pos=toCanvas(t.clientX,t.clientY); if(!pos) return;
     const last=lassoPoints[lassoPoints.length-1];
@@ -1895,6 +2160,14 @@ vp.addEventListener('touchmove',e=>{
 vp.addEventListener('touchend',e=>{
   if(brushMode==='lasso'&&lassoMode==='free'&&lassoActive){
     lassoActive=false; finishLasso(); return;
+  }
+  if(brushMode==='crop'&&cropDragging){
+    cropDragging=false;
+    if(cropRect){
+      const w=Math.abs(cropRect.x2-cropRect.x1), h=Math.abs(cropRect.y2-cropRect.y1);
+      if(w<4||h<4){ cancelCrop(); } else { drawCropOverlay(); $('bt-crop-apply').style.display='inline-block'; }
+    }
+    return;
   }
   if(rotDragging){rotDragging=false;if(Math.abs(rotLive)>0.5)bakeRotation(rotLive);return;}
   brushPainting=false; lastPt=null;

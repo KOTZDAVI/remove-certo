@@ -1,0 +1,10 @@
+.git
+__pycache__/
+*.pyc
+dist/
+build/
+uploads/
+results/
+originals/
+backgrounds/
+*.spec

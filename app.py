@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import uuid
 import zipfile
 
 # Limita threads antes de importar numpy/onnxruntime para não travar o PC
@@ -273,9 +274,12 @@ def remove_background():
             img_bytes   = file.read()
             input_image = Image.open(io.BytesIO(img_bytes)).convert("RGBA")
             base_name   = os.path.splitext(file.filename)[0]
+            # Token único evita colisão quando várias pessoas usam o app ao mesmo tempo
+            # (dois uploads de "foto.png" não podem sobrescrever o arquivo um do outro)
+            token       = uuid.uuid4().hex[:8]
 
             # Salva original como JPEG (RGB, sem transparência → sem checkerboard)
-            orig_filename = f"{base_name}_original.jpg"
+            orig_filename = f"{base_name}_{token}_original.jpg"
             Image.open(io.BytesIO(img_bytes)).convert("RGB").save(
                 os.path.join(ORIGINAL_FOLDER, orig_filename), "JPEG", quality=95
             )
@@ -285,7 +289,7 @@ def remove_background():
             else:
                 output_image = remove_ai(input_image)
 
-            out_filename = f"{base_name}_sem_fundo.png"
+            out_filename = f"{base_name}_{token}_sem_fundo.png"
             output_image.save(os.path.join(RESULT_FOLDER, out_filename), "PNG")
 
             results.append({
@@ -481,8 +485,9 @@ def pdf_extract():
     if not pdf_hex or not pages:
         return jsonify({"error": "Dados insuficientes"}), 400
 
-    doc  = fitz.open(stream=bytes.fromhex(pdf_hex), filetype="pdf")
-    mat  = fitz.Matrix(dpi / 72.0, dpi / 72.0)
+    doc   = fitz.open(stream=bytes.fromhex(pdf_hex), filetype="pdf")
+    mat   = fitz.Matrix(dpi / 72.0, dpi / 72.0)
+    token = uuid.uuid4().hex[:8]  # evita colisão entre extrações de PDFs simultâneas
     results = []
 
     for page_num in pages:
@@ -490,11 +495,11 @@ def pdf_extract():
             pix = doc[page_num - 1].get_pixmap(matrix=mat, alpha=False)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
 
-            orig_fn = f"pagina_{page_num:02d}_original.jpg"
+            orig_fn = f"pagina_{page_num:02d}_{token}_original.jpg"
             img.save(os.path.join(ORIGINAL_FOLDER, orig_fn), "JPEG", quality=95)
 
             out = remove_white_bg(img.convert("RGBA"), tolerance=tolerance) if remove_bg else img.convert("RGBA")
-            out_fn = f"pagina_{page_num:02d}.png"
+            out_fn = f"pagina_{page_num:02d}_{token}.png"
             out.save(os.path.join(RESULT_FOLDER, out_fn), "PNG")
 
             results.append({"page": page_num, "result": out_fn, "original": orig_fn, "error": None})
@@ -503,6 +508,14 @@ def pdf_extract():
 
     doc.close()
     return jsonify({"results": results})
+
+
+@app.route("/logo")
+def serve_logo():
+    path = os.path.join(_BASE_DIR, "icon.png")
+    if not os.path.exists(path):
+        return "Não encontrado", 404
+    return send_file(path, mimetype="image/png")
 
 
 @app.route("/backgrounds")
@@ -568,4 +581,8 @@ def pick_folder():
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="127.0.0.1", port=5050)
+    # Em hospedagem (Railway etc.) a plataforma define PORT e espera bind em 0.0.0.0.
+    # Localmente (uso como app de desktop) mantém 127.0.0.1 por padrão.
+    _port = int(os.environ.get("PORT", 5050))
+    _host = "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"
+    app.run(debug=False, host=_host, port=_port)

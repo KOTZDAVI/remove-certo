@@ -56,10 +56,6 @@ def _open_browser_when_ready():
         try:
             urllib.request.urlopen(f"http://127.0.0.1:{PORT}/", timeout=1)
             webbrowser.open(URL)
-            # Fecha o terminal após abrir o navegador
-            if sys.stdout.isatty():
-                time.sleep(1)
-                os.system("pkill -P $$ 2>/dev/null; kill $(ps -o ppid= -p $$) 2>/dev/null || true")
             return
         except Exception:
             pass
