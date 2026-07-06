@@ -34,22 +34,6 @@ def _fetch_bytes(url, timeout=30):
         return r.read()
 
 
-def _dest_path(rel_path):
-    """Resolve onde salvar cada arquivo baixado.
-
-    No binário compilado, app.py embutido e os templates em sys._MEIPASS têm
-    prioridade — então o app.py vai para app_update.py (carregado pelo
-    launcher) e os templates vão direto para a pasta que o Flask usa.
-    """
-    norm = rel_path.replace("\\", "/")
-    if getattr(sys, "frozen", False):
-        if norm == "app.py":
-            return os.path.join(_BASE_DIR, "app_update.py")
-        if norm.startswith("templates/"):
-            return os.path.join(sys._MEIPASS, norm.replace("/", os.sep))
-    return os.path.join(_BASE_DIR, norm.replace("/", os.sep))
-
-
 def check_and_update():
     """Roda em background — verifica GitHub e baixa arquivos se houver versão nova."""
     global update_result
@@ -83,7 +67,7 @@ def check_and_update():
         # Baixa cada arquivo listado
         for rel_path in remote.get("files", []):
             url  = base_url + rel_path.replace("\\", "/")
-            dest = _dest_path(rel_path)
+            dest = os.path.join(_BASE_DIR, rel_path.replace("/", os.sep))
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             data = _fetch_bytes(url)
             # Escreve em arquivo temporário e substitui atomicamente

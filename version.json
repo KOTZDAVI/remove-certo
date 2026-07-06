@@ -1,5 +1,5 @@
 {
   "version": 2,
   "date": "2026-07-06",
-  "files": ["app.py", "templates/index.html"]
+  "files": ["app.py", "templates/index.html", "app_update.py"]
 }

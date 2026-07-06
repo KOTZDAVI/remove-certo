@@ -14,7 +14,13 @@ os.environ.setdefault("MKL_NUM_THREADS", _THREADS)
 _FROZEN = getattr(sys, "frozen", False)
 if _FROZEN:
     _BASE_DIR = os.path.dirname(sys.executable)
-    _TEMPLATE_DIR = os.path.join(sys._MEIPASS, "templates")
+    # Templates baixados pelo updater (ao lado do executável) têm prioridade
+    # sobre os embutidos no binário
+    _updated_tpl = os.path.join(_BASE_DIR, "templates")
+    if os.path.isfile(os.path.join(_updated_tpl, "index.html")):
+        _TEMPLATE_DIR = _updated_tpl
+    else:
+        _TEMPLATE_DIR = os.path.join(sys._MEIPASS, "templates")
     # Modelos do rembg ficam na pasta "models" ao lado do executável
     os.environ.setdefault("REMBG_HOME", os.path.join(_BASE_DIR, "models"))
 else:

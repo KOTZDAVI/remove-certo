@@ -541,10 +541,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:.83rem;font-weight:600;
   z-index:600;display:none;align-items:center;gap:14px;box-shadow:0 4px 20px rgba(0,0,0,.5)">
   <span id="update-msg">Nova versão disponível!</span>
-  <button onclick="fetch('/restart',{method:'POST'}).then(()=>{
-    document.getElementById('update-banner').style.display='none';
-    setTimeout(()=>location.reload(),1500);
-  })" style="background:#6ee7b7;color:#065f46;border:none;border-radius:6px;
+  <button onclick="applyUpdate(this)" style="background:#6ee7b7;color:#065f46;border:none;border-radius:6px;
     padding:5px 14px;font-weight:700;cursor:pointer;font-size:.8rem">
     Aplicar e reiniciar
   </button>
@@ -572,6 +569,27 @@ if(location.protocol==='file:'){
     'style="background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;border:none;'+
     'border-radius:8px;padding:10px 28px;font-size:.9rem;font-weight:600;cursor:pointer">'+
     'Abrir corretamente</button></div></div>');
+}
+
+// ── aplica atualização baixada ─────────────────────────────────────
+// Em versões antigas do app o reinício automático pode falhar (o processo
+// encerra mas não volta) — nesse caso orienta o usuário a reabrir o app.
+async function applyUpdate(btn){
+  btn.disabled=true; btn.textContent='Reiniciando...';
+  try{ await fetch('/restart',{method:'POST'}); }catch(e){}
+  const t0=Date.now();
+  (async function waitBack(){
+    while(Date.now()-t0 < 45000){
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        const r=await fetch('/',{cache:'no-store'});
+        if(r.ok){ location.reload(); return; }
+      }catch(e){}
+    }
+    document.getElementById('update-msg').textContent=
+      'Atualização baixada! Feche e abra o Remove Certo para concluir.';
+    btn.style.display='none';
+  })();
 }
 
 // ── verifica atualização disponível (polling leve) ────────────────

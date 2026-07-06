@@ -34,10 +34,18 @@ def update_status():
 
 @app.route("/restart", methods=["POST"])
 def restart_app():
-    """Reinicia o processo para aplicar atualização baixada."""
+    """Reinicia o processo para aplicar atualização baixada.
+
+    Não usa os.execv: o socket da porta 5050 é herdado pelo novo processo e
+    o bind falha. Inicia um processo novo desanexado e encerra o atual — o
+    novo demora alguns segundos carregando, tempo de sobra para a porta vagar.
+    """
     def _do_restart():
         time.sleep(0.5)
-        os.execv(sys.executable, sys.argv)
+        import subprocess
+        subprocess.Popen([sys.executable] + sys.argv[1:],
+                         start_new_session=True, close_fds=True)
+        os._exit(0)
     threading.Thread(target=_do_restart, daemon=True).start()
     return jsonify({"ok": True})
 
